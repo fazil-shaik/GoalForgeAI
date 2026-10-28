@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { AuthProvider } from "@/context/AuthContext";
+import { GoalProvider } from "@/context/GoalContext";
 
 export const metadata: Metadata = {
   title: "GoalForge AI — Turn Ambition Into Unstoppable Execution",
@@ -16,7 +17,9 @@ export default function RootLayout({
     <html lang="en" className="h-full antialiased dark">
       <body className="min-h-full flex flex-col bg-slate-950 text-slate-100 font-sans selection:bg-indigo-500 selection:text-white">
         <AuthProvider>
-          {children}
+          <GoalProvider>
+            {children}
+          </GoalProvider>
         </AuthProvider>
       </body>
     </html>
