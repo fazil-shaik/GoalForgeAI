@@ -29,6 +29,7 @@ import {
 } from "lucide-react";
 
 import { GoalBuilderFeature } from "@/components/dashboard/GoalBuilderFeature";
+import { DailyTaskFeature } from "@/components/dashboard/DailyTaskFeature";
 
 export type DashboardTab = "tasks" | "builder" | "recovery" | "coach";
 
@@ -351,18 +352,7 @@ export default function DashboardPage() {
         <div id="feature-container" className="space-y-6">
           {/* Shell Placeholder / Feature Router */}
           {activeTab === "tasks" && (
-            <div id="feature-tasks-root" className="bg-slate-900/40 rounded-2xl border border-slate-800 p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-lg font-bold text-white flex items-center gap-2">
-                  <CheckCircle2 className="w-5 h-5 text-emerald-400" />
-                  Daily Action & Task Tracker
-                </h2>
-                <span className="text-xs text-slate-400 font-mono">Module Active</span>
-              </div>
-              <p className="text-sm text-slate-300">
-                Managing today&apos;s {todayTasks.length} action items and tracking progress without broken streaks.
-              </p>
-            </div>
+            <DailyTaskFeature onNavigateToRecovery={() => setActiveTab("recovery")} />
           )}
 
           {activeTab === "builder" && (
