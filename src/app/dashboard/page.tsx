@@ -30,6 +30,7 @@ import {
 
 import { GoalBuilderFeature } from "@/components/dashboard/GoalBuilderFeature";
 import { DailyTaskFeature } from "@/components/dashboard/DailyTaskFeature";
+import { RecoveryModeFeature } from "@/components/dashboard/RecoveryModeFeature";
 
 export type DashboardTab = "tasks" | "builder" | "recovery" | "coach";
 
@@ -360,18 +361,7 @@ export default function DashboardPage() {
           )}
 
           {activeTab === "recovery" && (
-            <div id="feature-recovery-root" className="bg-slate-900/40 rounded-2xl border border-slate-800 p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-lg font-bold text-white flex items-center gap-2">
-                  <RotateCcw className="w-5 h-5 text-amber-400" />
-                  Goal Recovery Mode (Core Differentiator)
-                </h2>
-                <span className="text-xs text-slate-400 font-mono">Module Active</span>
-              </div>
-              <p className="text-sm text-slate-300">
-                Compassionate obstacle diagnosis and adaptive replanning when life gets in the way.
-              </p>
-            </div>
+            <RecoveryModeFeature onReturnToTasks={() => setActiveTab("tasks")} />
           )}
 
           {activeTab === "coach" && (
