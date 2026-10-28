@@ -13,505 +13,340 @@ import {
   Brain,
   ShieldCheck,
   Zap,
-  ChevronRight,
+  Layers,
+  Flame,
   Calendar,
   AlertTriangle,
-  Flame,
-  Award,
-  Layers
+  Play,
+  Check,
+  ChevronRight,
+  Compass,
+  Sliders
 } from "lucide-react";
+import { GoalForgeScene } from "@/components/3d/GoalForgeScene";
+import confetti from "canvas-confetti";
 
 export default function LandingPage() {
-  const [activeTab, setActiveTab] = useState<"roadmap" | "recovery" | "coach">("roadmap");
+  const [demoStep, setDemoStep] = useState<number>(1);
+  const [recoveryActive, setRecoveryActive] = useState<boolean>(false);
   const [completedDemoTask, setCompletedDemoTask] = useState<boolean>(false);
-  const [recoveryTriggered, setRecoveryTriggered] = useState<boolean>(false);
+
+  const triggerConfetti = () => {
+    try {
+      confetti({
+        particleCount: 50,
+        spread: 60,
+        origin: { y: 0.7 },
+      });
+    } catch {
+      // safe fallback
+    }
+  };
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col selection:bg-indigo-500 selection:text-white">
-      {/* Header / Navigation */}
-      <header className="sticky top-0 z-50 backdrop-blur-md bg-slate-950/80 border-b border-slate-800/80">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+    <div className="min-h-screen bg-[#070a12] text-slate-100 flex flex-col selection:bg-indigo-500 selection:text-white relative overflow-hidden">
+      {/* Ambient Aurora Glow Background */}
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[450px] bg-gradient-to-tr from-indigo-600/15 via-teal-500/10 to-emerald-500/10 rounded-full blur-[140px] pointer-events-none" />
+      <div className="absolute top-[40%] right-[-100px] w-[500px] h-[500px] bg-indigo-500/10 rounded-full blur-[150px] pointer-events-none" />
+      <div className="absolute bottom-[20%] left-[-100px] w-[500px] h-[500px] bg-emerald-500/10 rounded-full blur-[150px] pointer-events-none" />
+
+      {/* Floating Glassmorphic Top Navbar */}
+      <header className="sticky top-3 z-50 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
+        <div className="glass-card rounded-2xl px-4 sm:px-6 h-16 flex items-center justify-between shadow-2xl border border-white/10 backdrop-blur-xl">
           <Link href="/" className="flex items-center gap-2.5 group">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 via-indigo-500 to-emerald-400 p-0.5 shadow-lg shadow-indigo-500/20 group-hover:scale-105 transition-transform">
-              <div className="w-full h-full bg-slate-950 rounded-[10px] flex items-center justify-center">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 via-indigo-500 to-emerald-400 p-0.5 shadow-lg shadow-indigo-500/30 group-hover:scale-105 transition-transform">
+              <div className="w-full h-full bg-[#070a12] rounded-[10px] flex items-center justify-center">
                 <Target className="w-5 h-5 text-indigo-400 group-hover:text-emerald-400 transition-colors" />
               </div>
             </div>
             <div className="flex flex-col">
-              <span className="font-bold text-lg tracking-tight bg-gradient-to-r from-white via-slate-200 to-indigo-200 bg-clip-text text-transparent">
-                GoalForge <span className="text-emerald-400 font-extrabold">AI</span>
+              <span className="font-extrabold text-lg tracking-tight bg-gradient-to-r from-white via-slate-200 to-indigo-200 bg-clip-text text-transparent">
+                GoalForge <span className="text-emerald-400 font-black">AI</span>
               </span>
-              <span className="text-[10px] uppercase tracking-widest text-slate-400 -mt-1 font-semibold">
-                Adaptive Execution
+              <span className="text-[9px] uppercase tracking-widest text-slate-400 -mt-1 font-mono font-semibold">
+                3D Adaptive Engine
               </span>
             </div>
           </Link>
 
-          <nav className="hidden md:flex items-center gap-8 text-sm font-medium text-slate-300">
-            <a href="#features" className="hover:text-white transition-colors">
-              Features
+          <nav className="hidden md:flex items-center gap-7 text-xs font-semibold text-slate-300">
+            <a href="#3d-core" className="hover:text-white transition-colors flex items-center gap-1.5">
+              <Sparkles className="w-3.5 h-3.5 text-indigo-400" /> 3D Core
             </a>
-            <a href="#recovery" className="hover:text-white transition-colors flex items-center gap-1.5 text-indigo-300">
-              <RotateCcw className="w-3.5 h-3.5 text-emerald-400" />
-              Goal Recovery
+            <a href="#bento-features" className="hover:text-white transition-colors">
+              Pillars
             </a>
-            <a href="#how-it-works" className="hover:text-white transition-colors">
-              How it Works
+            <a href="#recovery" className="hover:text-amber-400 transition-colors flex items-center gap-1 text-amber-300">
+              <RotateCcw className="w-3 h-3 text-amber-400" /> Recovery Mode
             </a>
-            <a href="#demo" className="hover:text-white transition-colors">
-              Interactive Demo
+            <a href="#matrix" className="hover:text-white transition-colors">
+              Comparison
             </a>
           </nav>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2.5">
             <Link
               href="/auth"
-              className="text-sm font-medium text-slate-300 hover:text-white px-3 py-2 rounded-lg hover:bg-slate-800/60 transition-colors"
+              className="text-xs font-semibold text-slate-300 hover:text-white px-3 py-2 rounded-xl hover:bg-slate-800/60 transition-colors"
             >
               Sign In
             </Link>
             <Link
               href="/auth?mode=signup"
-              className="inline-flex items-center gap-2 text-sm font-semibold bg-gradient-to-r from-indigo-600 to-emerald-500 hover:from-indigo-500 hover:to-emerald-400 text-white px-4 py-2 rounded-lg shadow-md shadow-indigo-500/20 transition-all hover:shadow-indigo-500/30 hover:scale-[1.02]"
+              className="inline-flex items-center gap-1.5 text-xs font-bold bg-gradient-to-r from-indigo-600 to-emerald-500 hover:from-indigo-500 hover:to-emerald-400 text-white px-4 py-2.5 rounded-xl shadow-lg shadow-indigo-600/30 hover:shadow-indigo-600/40 hover:scale-[1.03] transition-all"
             >
-              Get Started Free
-              <ArrowRight className="w-4 h-4" />
+              Start Forging
+              <ArrowRight className="w-3.5 h-3.5" />
             </Link>
           </div>
         </div>
       </header>
 
-      {/* Hero Section */}
-      <section className="relative pt-20 pb-24 overflow-hidden border-b border-slate-900">
-        {/* Glow ambient background effects */}
-        <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[350px] bg-indigo-600/15 rounded-full blur-[120px] pointer-events-none" />
-        <div className="absolute top-1/3 right-1/4 w-[400px] h-[250px] bg-emerald-500/10 rounded-full blur-[100px] pointer-events-none" />
+      {/* Hero Section with Interactive 3D Canvas */}
+      <section id="3d-core" className="relative pt-8 sm:pt-14 pb-16 sm:pb-24 overflow-hidden">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center">
+            {/* Left Hero Content: High-Impact, Visual, Minimal Text */}
+            <div className="lg:col-span-6 space-y-6 text-center lg:text-left z-10">
+              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-900/90 border border-indigo-500/30 text-indigo-300 text-xs font-semibold backdrop-blur-md shadow-inner">
+                <Sparkles className="w-3.5 h-3.5 text-emerald-400 animate-pulse" />
+                <span>Next-Gen 3D Adaptive Execution Platform</span>
+              </div>
 
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 text-center">
-          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-900/90 border border-indigo-500/30 text-indigo-300 text-xs font-semibold mb-8 backdrop-blur-sm shadow-inner">
-            <Sparkles className="w-3.5 h-3.5 text-emerald-400 animate-pulse" />
-            <span>Turn Ambitions Into Realistic Plans — Not Broken Streaks</span>
-          </div>
+              <h1 className="text-4xl sm:text-6xl lg:text-7xl font-black tracking-tight text-white leading-[1.08]">
+                Turn Ambition Into{" "}
+                <span className="bg-gradient-to-r from-indigo-400 via-teal-300 to-emerald-400 bg-clip-text text-transparent">
+                  Unstoppable 3D Momentum
+                </span>
+              </h1>
 
-          <h1 className="text-4xl sm:text-6xl lg:text-7xl font-extrabold tracking-tight text-white max-w-4xl mx-auto leading-[1.1]">
-            Turn Ambition Into{" "}
-            <span className="bg-gradient-to-r from-indigo-400 via-teal-300 to-emerald-400 bg-clip-text text-transparent">
-              Unstoppable Execution
-            </span>
-          </h1>
+              <p className="text-sm sm:text-base text-slate-300 font-normal leading-relaxed max-w-xl mx-auto lg:mx-0">
+                Traditional trackers break when life gets busy. GoalForge AI turns big ambitions into daily capacity-aware roadmaps — and{" "}
+                <span className="text-emerald-400 font-semibold">reorganizes smoothly</span> when plans slip.
+              </p>
 
-          <p className="mt-6 text-lg sm:text-xl text-slate-300 max-w-2xl mx-auto font-normal leading-relaxed">
-            Most goal trackers fail the moment life gets unpredictable. GoalForge AI breaks natural-language ambitions into capacity-aware roadmaps — and{" "}
-            <span className="text-emerald-400 font-medium">intelligently recovers your momentum</span> when life gets in the way.
-          </p>
+              {/* Action Buttons */}
+              <div className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-3.5 pt-2">
+                <Link
+                  href="/auth?mode=signup"
+                  className="w-full sm:w-auto inline-flex items-center justify-center gap-2.5 px-7 py-3.5 rounded-xl font-bold text-sm bg-gradient-to-r from-indigo-600 via-indigo-500 to-emerald-500 text-white shadow-xl shadow-indigo-600/30 hover:scale-[1.03] transition-all"
+                >
+                  <span>Launch GoalForge Free</span>
+                  <ArrowRight className="w-4 h-4" />
+                </Link>
+                <Link
+                  href="/dashboard"
+                  className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-3.5 rounded-xl font-semibold text-sm bg-slate-900/90 hover:bg-slate-800 text-slate-200 border border-slate-700 transition-all hover:border-indigo-500/50"
+                >
+                  <Play className="w-3.5 h-3.5 text-emerald-400 fill-emerald-400" />
+                  <span>Explore Live Dashboard</span>
+                </Link>
+              </div>
 
-          <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
-            <Link
-              href="/auth?mode=signup"
-              className="w-full sm:w-auto inline-flex items-center justify-center gap-2.5 px-7 py-3.5 rounded-xl font-bold text-base bg-gradient-to-r from-indigo-600 via-indigo-500 to-emerald-500 text-white shadow-xl shadow-indigo-600/25 hover:shadow-indigo-600/40 hover:scale-[1.02] transition-all"
-            >
-              Start Forging Free
-              <ArrowRight className="w-5 h-5" />
-            </Link>
-            <a
-              href="#demo"
-              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-xl font-semibold text-base bg-slate-900 hover:bg-slate-800 text-slate-200 border border-slate-700 hover:border-slate-600 transition-all"
-            >
-              <Zap className="w-4 h-4 text-emerald-400" />
-              Explore Interactive Demo
-            </a>
-          </div>
-
-          <div className="mt-12 flex flex-wrap items-center justify-center gap-6 sm:gap-10 text-xs sm:text-sm text-slate-400">
-            <div className="flex items-center gap-2">
-              <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-              <span>Zero broken-streak guilt</span>
+              {/* Floating Metric Badges */}
+              <div className="grid grid-cols-3 gap-2.5 pt-4 max-w-lg mx-auto lg:mx-0">
+                <div className="glass-card p-3 rounded-xl border border-white/5 text-center">
+                  <span className="text-base sm:text-xl font-extrabold text-emerald-400 font-mono">0%</span>
+                  <p className="text-[10px] text-slate-400 font-medium mt-0.5">Broken Streak Guilt</p>
+                </div>
+                <div className="glass-card p-3 rounded-xl border border-white/5 text-center">
+                  <span className="text-base sm:text-xl font-extrabold text-indigo-400 font-mono">45m</span>
+                  <p className="text-[10px] text-slate-400 font-medium mt-0.5">Daily Workload Cap</p>
+                </div>
+                <div className="glass-card p-3 rounded-xl border border-white/5 text-center">
+                  <span className="text-base sm:text-xl font-extrabold text-amber-400 font-mono">89%</span>
+                  <p className="text-[10px] text-slate-400 font-medium mt-0.5">Recovery Retention</p>
+                </div>
+              </div>
             </div>
-            <div className="flex items-center gap-2">
-              <CheckCircle2 className="w-4 h-4 text-indigo-400" />
-              <span>Capacity-aware daily planning</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <CheckCircle2 className="w-4 h-4 text-teal-400" />
-              <span>Adaptive recovery mode</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-              <span>Always user-approved changes</span>
+
+            {/* Right Hero: The Interactive 3D WebGL Canvas Scene */}
+            <div className="lg:col-span-6 relative flex items-center justify-center">
+              <div className="w-full relative rounded-3xl overflow-hidden glass-card border border-indigo-500/30 shadow-2xl bg-gradient-to-b from-indigo-950/20 via-slate-950/60 to-slate-950/80">
+                {/* 3D Scene */}
+                <GoalForgeScene />
+              </div>
             </div>
           </div>
         </div>
+      </section>
 
-        {/* Interactive Hero Preview Component */}
-        <div id="demo" className="max-w-5xl mx-auto px-4 mt-16">
-          <div className="bg-slate-900/90 rounded-2xl border border-slate-800 p-4 sm:p-6 shadow-2xl backdrop-blur-xl relative overflow-hidden">
-            {/* Window header */}
-            <div className="flex items-center justify-between pb-4 mb-4 border-b border-slate-800">
-              <div className="flex items-center gap-2">
-                <div className="w-3 h-3 rounded-full bg-rose-500/80" />
-                <div className="w-3 h-3 rounded-full bg-amber-500/80" />
-                <div className="w-3 h-3 rounded-full bg-emerald-500/80" />
-                <span className="ml-3 text-xs font-mono text-slate-400">GoalForge Dashboard Preview</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="text-xs bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2 py-0.5 rounded-full font-mono">
-                  Live Preview
+      {/* Visual Interactive Bento Grid: 4 Core Features */}
+      <section id="bento-features" className="py-20 relative border-t border-slate-900">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center max-w-2xl mx-auto mb-14">
+            <span className="text-[11px] font-mono uppercase tracking-widest text-indigo-400 font-bold bg-indigo-500/10 px-3 py-1 rounded-full border border-indigo-500/20">
+              Visual Architecture
+            </span>
+            <h2 className="text-3xl sm:text-5xl font-black text-white mt-3 tracking-tight">
+              Four Adaptive Execution Pillars
+            </h2>
+            <p className="text-xs sm:text-sm text-slate-400 mt-2">
+              Engineered for continuous momentum and real-world human schedules.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-12 gap-5">
+            {/* Bento Card 1: AI Goal & Roadmap Builder (Span 7) */}
+            <div className="md:col-span-7 glass-card glass-card-hover p-6 sm:p-7 rounded-3xl relative overflow-hidden flex flex-col justify-between">
+              <div className="flex items-center justify-between mb-4">
+                <div className="w-11 h-11 rounded-2xl bg-indigo-500/20 border border-indigo-500/40 text-indigo-400 flex items-center justify-center">
+                  <Target className="w-6 h-6" />
+                </div>
+                <span className="text-[10px] font-mono uppercase bg-indigo-500/10 text-indigo-300 px-2.5 py-1 rounded-full border border-indigo-500/20">
+                  Pillar 01 • Builder
                 </span>
               </div>
-            </div>
 
-            {/* Interactive Tab Switcher */}
-            <div className="flex flex-wrap items-center justify-between gap-3 mb-6 bg-slate-950/70 p-2 rounded-xl border border-slate-800/80">
-              <div className="flex gap-2">
-                <button
-                  onClick={() => setActiveTab("roadmap")}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all flex items-center gap-1.5 ${
-                    activeTab === "roadmap"
-                      ? "bg-indigo-600 text-white shadow"
-                      : "text-slate-400 hover:text-slate-200"
-                  }`}
-                >
-                  <Layers className="w-3.5 h-3.5" />
-                  Active Goal Roadmap
-                </button>
-                <button
-                  onClick={() => setActiveTab("recovery")}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all flex items-center gap-1.5 ${
-                    activeTab === "recovery"
-                      ? "bg-amber-600/90 text-white shadow"
-                      : "text-amber-400 hover:text-amber-300"
-                  }`}
-                >
-                  <RotateCcw className="w-3.5 h-3.5" />
-                  Goal Recovery Mode
-                </button>
-                <button
-                  onClick={() => setActiveTab("coach")}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all flex items-center gap-1.5 ${
-                    activeTab === "coach"
-                      ? "bg-emerald-600 text-white shadow"
-                      : "text-slate-400 hover:text-slate-200"
-                  }`}
-                >
-                  <Brain className="w-3.5 h-3.5" />
-                  AI Coach Insights
-                </button>
+              <div>
+                <h3 className="text-xl font-black text-white">AI Goal & Roadmap Generator</h3>
+                <p className="text-xs text-slate-400 mt-1 max-w-md">
+                  Convert natural ambitions into milestone sequences with minute estimates and verified user approval before activation.
+                </p>
               </div>
 
-              <div className="text-xs text-slate-400">
-                Goal: <span className="text-slate-200 font-semibold">Launch SaaS MVP in 60 Days</span>
-              </div>
-            </div>
-
-            {/* Tab 1: Roadmap View */}
-            {activeTab === "roadmap" && (
-              <div className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div className="bg-slate-950/60 p-4 rounded-xl border border-slate-800">
-                    <span className="text-xs text-slate-400">Planned Velocity</span>
-                    <p className="text-2xl font-bold text-white mt-1">45 min<span className="text-xs text-slate-400 font-normal">/day</span></p>
-                    <span className="text-[11px] text-emerald-400 mt-1 inline-block">✓ Fits declared capacity</span>
+              {/* Interactive Roadmap Mini-Widget */}
+              <div className="mt-5 p-3.5 rounded-2xl bg-slate-950/80 border border-slate-800 space-y-2">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="font-semibold text-slate-200">Active Blueprint: AWS Solutions Architect</span>
+                  <span className="text-[10px] text-emerald-400 font-mono">Plan v1.0 Approved</span>
+                </div>
+                <div className="space-y-1.5 text-[11px]">
+                  <div className="p-2 rounded-lg bg-slate-900 border border-slate-800 flex items-center justify-between">
+                    <span className="text-slate-300">1. VPC Hub-and-Spoke Architecture</span>
+                    <span className="text-emerald-400 font-mono">✓ Done</span>
                   </div>
-                  <div className="bg-slate-950/60 p-4 rounded-xl border border-slate-800">
-                    <span className="text-xs text-slate-400">Milestones Completed</span>
-                    <p className="text-2xl font-bold text-indigo-400 mt-1">2 <span className="text-slate-500 font-normal text-base">/ 5</span></p>
-                    <span className="text-[11px] text-slate-400 mt-1 inline-block">40% overall roadmap</span>
-                  </div>
-                  <div className="bg-slate-950/60 p-4 rounded-xl border border-slate-800">
-                    <span className="text-xs text-slate-400">Feasibility Confidence</span>
-                    <p className="text-2xl font-bold text-emerald-400 mt-1">Moderate Risk</p>
-                    <span className="text-[11px] text-slate-400 mt-1 inline-block">Safe schedule with 3-day buffer</span>
+                  <div className="p-2 rounded-lg bg-indigo-950/30 border border-indigo-500/30 flex items-center justify-between text-indigo-300 font-semibold">
+                    <span>2. IAM Attribute-Based Role Delegation</span>
+                    <span className="font-mono">Today (30m)</span>
                   </div>
                 </div>
+              </div>
+            </div>
 
-                <div className="bg-slate-950/70 p-4 rounded-xl border border-slate-800">
-                  <div className="flex items-center justify-between mb-3">
-                    <h4 className="text-sm font-semibold text-slate-200 flex items-center gap-2">
-                      <Calendar className="w-4 h-4 text-indigo-400" />
-                      Today&apos;s Focus Tasks
-                    </h4>
-                    <span className="text-xs text-slate-400">Total time: 45m</span>
-                  </div>
+            {/* Bento Card 2: Daily Execution Hub (Span 5) */}
+            <div className="md:col-span-5 glass-card glass-card-hover p-6 sm:p-7 rounded-3xl relative overflow-hidden flex flex-col justify-between">
+              <div className="flex items-center justify-between mb-4">
+                <div className="w-11 h-11 rounded-2xl bg-emerald-500/20 border border-emerald-500/40 text-emerald-400 flex items-center justify-center">
+                  <CheckCircle2 className="w-6 h-6" />
+                </div>
+                <span className="text-[10px] font-mono uppercase bg-emerald-500/10 text-emerald-300 px-2.5 py-1 rounded-full border border-emerald-500/20">
+                  Pillar 02 • Daily Focus
+                </span>
+              </div>
 
-                  <div className="space-y-2">
+              <div>
+                <h3 className="text-xl font-black text-white">Daily Execution & Focus Sprints</h3>
+                <p className="text-xs text-slate-400 mt-1">
+                  Bite-sized daily checklists capped to your declared time budget with built-in focus timers.
+                </p>
+              </div>
+
+              {/* Interactive Click-to-Complete Demo */}
+              <div
+                onClick={() => {
+                  setCompletedDemoTask(!completedDemoTask);
+                  if (!completedDemoTask) triggerConfetti();
+                }}
+                className={`mt-5 p-3.5 rounded-2xl border transition-all cursor-pointer ${
+                  completedDemoTask
+                    ? "bg-emerald-950/40 border-emerald-500/60"
+                    : "bg-slate-950/80 border-slate-800 hover:border-indigo-500/50"
+                }`}
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2.5">
                     <div
-                      onClick={() => setCompletedDemoTask(!completedDemoTask)}
-                      className={`p-3 rounded-lg border flex items-center justify-between cursor-pointer transition-all ${
+                      className={`w-5 h-5 rounded-md flex items-center justify-center border transition-colors ${
                         completedDemoTask
-                          ? "bg-emerald-950/30 border-emerald-500/40 text-slate-300"
-                          : "bg-slate-900 border-slate-800 hover:border-indigo-500/50"
+                          ? "bg-emerald-500 border-emerald-500 text-slate-950"
+                          : "border-slate-600"
                       }`}
                     >
-                      <div className="flex items-center gap-3">
-                        <div
-                          className={`w-5 h-5 rounded-md flex items-center justify-center border transition-colors ${
-                            completedDemoTask
-                              ? "bg-emerald-500 border-emerald-500 text-slate-950"
-                              : "border-slate-600 hover:border-indigo-400"
-                          }`}
-                        >
-                          {completedDemoTask && <CheckCircle2 className="w-4 h-4" />}
-                        </div>
-                        <div>
-                          <p className={`text-sm font-medium ${completedDemoTask ? "line-through text-slate-500" : "text-slate-200"}`}>
-                            Design core database schema for user goals & tasks
-                          </p>
-                          <span className="text-xs text-slate-400 flex items-center gap-2 mt-0.5">
-                            <Clock className="w-3 h-3" /> 30 min • High Priority • Milestone 3
-                          </span>
-                        </div>
-                      </div>
-                      <span className="text-xs font-mono px-2 py-1 bg-slate-800 rounded text-slate-300">
-                        {completedDemoTask ? "Completed!" : "Click to Complete"}
-                      </span>
+                      {completedDemoTask && <Check className="w-3.5 h-3.5" />}
                     </div>
-
-                    <div className="p-3 rounded-lg border border-slate-800 bg-slate-900 flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <div className="w-5 h-5 rounded-md border border-slate-600" />
-                        <div>
-                          <p className="text-sm font-medium text-slate-200">
-                            Draft landing page value proposition and feature matrix
-                          </p>
-                          <span className="text-xs text-slate-400 flex items-center gap-2 mt-0.5">
-                            <Clock className="w-3 h-3" /> 15 min • Normal Priority
-                          </span>
-                        </div>
-                      </div>
-                      <span className="text-xs text-slate-400">Scheduled for today</span>
-                    </div>
+                    <span className={`text-xs font-semibold ${completedDemoTask ? "line-through text-slate-400" : "text-white"}`}>
+                      Complete 25m Deep Work Sprint
+                    </span>
                   </div>
+                  <span className="text-[10px] font-mono text-emerald-400">
+                    {completedDemoTask ? "Celebrated! 🎉" : "Click to Try"}
+                  </span>
                 </div>
               </div>
-            )}
+            </div>
 
-            {/* Tab 2: Recovery Mode View */}
-            {activeTab === "recovery" && (
-              <div className="bg-slate-950/70 p-5 rounded-xl border border-amber-500/30 space-y-4">
-                <div className="flex items-start gap-3">
-                  <div className="w-9 h-9 rounded-lg bg-amber-500/20 text-amber-400 flex items-center justify-center shrink-0 mt-0.5">
-                    <RotateCcw className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <h4 className="text-base font-bold text-white">Adaptive Goal Recovery Engine</h4>
-                    <p className="text-xs text-slate-300 mt-1">
-                      Did you miss 2 days due to unexpected overtime or sickness? Instead of giving up or staring at red streaks, GoalForge AI assesses the slip and reorganizes future tasks.
-                    </p>
-                  </div>
+            {/* Bento Card 3: Goal Recovery Mode (Span 6) - Core Differentiator */}
+            <div id="recovery" className="md:col-span-6 glass-card glass-card-hover p-6 sm:p-7 rounded-3xl relative overflow-hidden flex flex-col justify-between border-amber-500/30">
+              <div className="flex items-center justify-between mb-4">
+                <div className="w-11 h-11 rounded-2xl bg-amber-500/20 border border-amber-500/40 text-amber-400 flex items-center justify-center">
+                  <RotateCcw className="w-6 h-6" />
                 </div>
+                <span className="text-[10px] font-mono uppercase bg-amber-500/10 text-amber-300 px-2.5 py-1 rounded-full border border-amber-500/20 font-bold">
+                  Signature Differentiator
+                </span>
+              </div>
 
-                <div className="p-3 bg-amber-950/20 rounded-lg border border-amber-500/20 text-xs text-amber-200 flex items-center justify-between">
-                  <span>Detected obstacle: <strong>2 overdue tasks (60 mins backlog)</strong></span>
+              <div>
+                <h3 className="text-xl font-black text-white">Adaptive Goal Recovery Engine</h3>
+                <p className="text-xs text-slate-400 mt-1">
+                  Did you miss 2 days due to unexpected emergencies? Rebalance future work across a 7-day ramp without red streaks or shame.
+                </p>
+              </div>
+
+              {/* Interactive Recovery Simulator */}
+              <div className="mt-5 p-3.5 rounded-2xl bg-slate-950/90 border border-amber-500/30 space-y-3">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-amber-300 font-semibold flex items-center gap-1.5">
+                    <AlertTriangle className="w-3.5 h-3.5" /> 2 Overdue Tasks Detected (60m)
+                  </span>
                   <button
-                    onClick={() => setRecoveryTriggered(!recoveryTriggered)}
-                    className="px-3 py-1.5 rounded-md bg-amber-500 text-slate-950 font-bold hover:bg-amber-400 transition-colors"
+                    type="button"
+                    onClick={() => setRecoveryActive(!recoveryActive)}
+                    className="text-[10px] font-bold px-2.5 py-1 rounded-lg bg-amber-500 text-slate-950 hover:bg-amber-400 transition-colors"
                   >
-                    {recoveryTriggered ? "Reset Demo" : "Generate Recovery Plan"}
+                    {recoveryActive ? "Reset" : "Preview Recovery"}
                   </button>
                 </div>
 
-                {recoveryTriggered && (
-                  <div className="bg-slate-900/90 p-4 rounded-lg border border-slate-700 animate-fadeIn space-y-3">
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-semibold text-emerald-400 uppercase tracking-wider">
-                        Proposed AI Recovery Adjustment
-                      </span>
-                      <span className="text-xs text-slate-400">No deadline movement required</span>
-                    </div>
-                    <p className="text-xs text-slate-300">
-                      We split the 60 min backlog across tomorrow and Thursday, keeping your daily load capped at 45 min/day without burning out.
-                    </p>
-                    <div className="text-xs font-mono bg-slate-950 p-2.5 rounded border border-slate-800 text-slate-300">
-                      ✓ Rescheduled: Task #4 (30m) -&gt; Tomorrow 7:00 PM<br/>
-                      ✓ Rescheduled: Task #5 (30m) -&gt; Thursday 7:00 PM<br/>
-                      ✓ Preserved: All completed history and final deadline intact!
-                    </div>
+                {recoveryActive && (
+                  <div className="text-[11px] font-mono bg-slate-900 p-2.5 rounded-xl border border-slate-800 text-slate-300 space-y-1 animate-fadeIn">
+                    <p className="text-emerald-400 font-semibold">✓ Rescheduled: Task #1 -&gt; Tomorrow (30m)</p>
+                    <p className="text-emerald-400 font-semibold">✓ Rescheduled: Task #2 -&gt; Friday (30m)</p>
+                    <p className="text-slate-400">✓ Deadline protected • Daily load stays capped at 45m</p>
                   </div>
                 )}
               </div>
-            )}
-
-            {/* Tab 3: AI Coach View */}
-            {activeTab === "coach" && (
-              <div className="bg-slate-950/70 p-5 rounded-xl border border-emerald-500/30 space-y-4">
-                <div className="flex items-start gap-3">
-                  <div className="w-9 h-9 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0">
-                    <Brain className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <h4 className="text-base font-bold text-white">Dedicated Goal Coach</h4>
-                    <p className="text-xs text-slate-300 mt-1">
-                      Context-aware guidance anchored in your actual progress data. No generic quotes — only practical next steps.
-                    </p>
-                  </div>
-                </div>
-
-                <div className="space-y-2.5 text-xs">
-                  <div className="p-3 bg-slate-900 rounded-lg border border-slate-800 max-w-md ml-auto text-slate-200">
-                    &quot;I only have 20 minutes today instead of 45. What should I prioritize?&quot;
-                  </div>
-                  <div className="p-3 bg-emerald-950/30 border border-emerald-500/30 rounded-lg max-w-lg text-slate-200 space-y-1.5">
-                    <p className="font-semibold text-emerald-400 flex items-center gap-1.5">
-                      <Sparkles className="w-3.5 h-3.5" /> Coach Recommendation:
-                    </p>
-                    <p>
-                      Focus exclusively on <strong>Task 3.1: Defining the database primary keys</strong> (estimated 15 min). Save the index definitions for tomorrow. This keeps momentum alive without sacrificing quality.
-                    </p>
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-      </section>
-
-      {/* 4 Core Features Section */}
-      <section id="features" className="py-20 bg-slate-950 relative border-b border-slate-900">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center max-w-3xl mx-auto mb-16">
-            <h2 className="text-xs font-bold tracking-widest text-indigo-400 uppercase mb-2">
-              Four Core Pillars
-            </h2>
-            <p className="text-3xl sm:text-4xl font-extrabold text-white">
-              Built Specifically for Real-World Human Follow-Through
-            </p>
-            <p className="mt-4 text-slate-400 text-base">
-              From natural language ambitions to daily action checklists and graceful recovery, every feature works in harmony.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {/* Feature 1 */}
-            <div className="p-6 rounded-2xl bg-slate-900/60 border border-slate-800 hover:border-indigo-500/40 transition-all hover:-translate-y-1 group">
-              <div className="w-12 h-12 rounded-xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 flex items-center justify-center mb-5 group-hover:scale-110 transition-transform">
-                <Target className="w-6 h-6" />
-              </div>
-              <h3 className="text-lg font-bold text-white mb-2">1. AI Goal & Roadmap Builder</h3>
-              <p className="text-sm text-slate-400 leading-relaxed">
-                Describe your target in plain English. GoalForge generates measurable milestones, tasks, minute estimates, and dependencies, requiring your explicit approval before activation.
-              </p>
             </div>
 
-            {/* Feature 2 */}
-            <div className="p-6 rounded-2xl bg-slate-900/60 border border-slate-800 hover:border-emerald-500/40 transition-all hover:-translate-y-1 group">
-              <div className="w-12 h-12 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center mb-5 group-hover:scale-110 transition-transform">
-                <CheckCircle2 className="w-6 h-6" />
-              </div>
-              <h3 className="text-lg font-bold text-white mb-2">2. Daily Task & Execution Hub</h3>
-              <p className="text-sm text-slate-400 leading-relaxed">
-                Clear daily focus queue matching your declared daily minutes. Mark tasks done with instant celebratory feedback, log actual minutes, skip, or reschedule with full progress tracking.
-              </p>
-            </div>
-
-            {/* Feature 3 */}
-            <div className="p-6 rounded-2xl bg-slate-900/60 border border-slate-800 hover:border-amber-500/40 transition-all hover:-translate-y-1 group">
-              <div className="w-12 h-12 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-400 flex items-center justify-center mb-5 group-hover:scale-110 transition-transform">
-                <RotateCcw className="w-6 h-6" />
-              </div>
-              <h3 className="text-lg font-bold text-white mb-2">3. Goal Recovery Engine</h3>
-              <p className="text-sm text-slate-400 leading-relaxed">
-                Our core differentiator. When life gets in the way or tasks are overdue, diagnose the obstacle and generate a smaller, compassionate recovery plan with before-and-after diffs.
-              </p>
-            </div>
-
-            {/* Feature 4 */}
-            <div className="p-6 rounded-2xl bg-slate-900/60 border border-slate-800 hover:border-teal-500/40 transition-all hover:-translate-y-1 group">
-              <div className="w-12 h-12 rounded-xl bg-teal-500/10 border border-teal-500/20 text-teal-400 flex items-center justify-center mb-5 group-hover:scale-110 transition-transform">
-                <Brain className="w-6 h-6" />
-              </div>
-              <h3 className="text-lg font-bold text-white mb-2">4. AI Coach & Feasibility Insights</h3>
-              <p className="text-sm text-slate-400 leading-relaxed">
-                Real-time workload vs weekly capacity analysis, risk band indicators, blocker breakdowns, and intelligent advice based only on your recorded progress.
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Signature Differentiator Deep Dive */}
-      <section id="recovery" className="py-20 bg-slate-900/40 border-b border-slate-900">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-            <div>
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-400 text-xs font-semibold mb-4">
-                <RotateCcw className="w-3.5 h-3.5" />
-                The Core Differentiator
-              </div>
-              <h2 className="text-3xl sm:text-4xl font-extrabold text-white leading-tight">
-                Why Traditional Goal Apps Fail — And How Goal Recovery Fixes It
-              </h2>
-              <p className="mt-4 text-slate-300 text-base leading-relaxed">
-                Most productivity apps assume a robot is operating them. The moment you miss 2 days due to flu, family emergencies, or tight work deadlines, you get slammed with 15 overdue notifications and broken streaks.
-              </p>
-              <p className="mt-3 text-slate-400 text-base leading-relaxed">
-                GoalForge AI treats recovery as a first-class feature. We diagnose what happened with compassion, ask one lightweight clarifying question, and recalculate an achievable 7-day ramp-up plan.
-              </p>
-
-              <div className="mt-8 space-y-3">
-                <div className="flex items-start gap-3">
-                  <div className="w-5 h-5 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0 mt-0.5">
-                    ✓
-                  </div>
-                  <span className="text-sm text-slate-200">
-                    <strong>Zero shaming:</strong> No punitive streak mechanics or red alerts.
-                  </span>
+            {/* Bento Card 4: AI Coach & Feasibility Insights (Span 6) */}
+            <div className="md:col-span-6 glass-card glass-card-hover p-6 sm:p-7 rounded-3xl relative overflow-hidden flex flex-col justify-between">
+              <div className="flex items-center justify-between mb-4">
+                <div className="w-11 h-11 rounded-2xl bg-teal-500/20 border border-teal-500/40 text-teal-400 flex items-center justify-center">
+                  <Brain className="w-6 h-6" />
                 </div>
-                <div className="flex items-start gap-3">
-                  <div className="w-5 h-5 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0 mt-0.5">
-                    ✓
-                  </div>
-                  <span className="text-sm text-slate-200">
-                    <strong>Preserves completed history:</strong> Every past victory remains counted.
-                  </span>
-                </div>
-                <div className="flex items-start gap-3">
-                  <div className="w-5 h-5 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0 mt-0.5">
-                    ✓
-                  </div>
-                  <span className="text-sm text-slate-200">
-                    <strong>User approval required:</strong> The AI never secretly touches your plan without your review.
-                  </span>
-                </div>
+                <span className="text-[10px] font-mono uppercase bg-teal-500/10 text-teal-300 px-2.5 py-1 rounded-full border border-teal-500/20">
+                  Pillar 04 • Intelligence
+                </span>
               </div>
 
-              <div className="mt-8">
-                <Link
-                  href="/auth?mode=signup"
-                  className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-amber-500 to-emerald-500 hover:from-amber-400 hover:to-emerald-400 text-slate-950 font-bold transition-all shadow-lg shadow-amber-500/20"
-                >
-                  Experience Recovery Mode
-                  <ArrowRight className="w-4 h-4" />
-                </Link>
+              <div>
+                <h3 className="text-xl font-black text-white">AI Coach & Feasibility Analytics</h3>
+                <p className="text-xs text-slate-400 mt-1">
+                  Real-time workload vs weekly capacity verification, risk bands, and actionable next steps anchored in your recorded progress.
+                </p>
               </div>
-            </div>
 
-            <div className="bg-slate-950 p-6 rounded-2xl border border-slate-800 shadow-xl">
-              <h4 className="text-xs font-mono text-slate-400 uppercase tracking-wider mb-4">
-                Comparison: The Goal Slippage Moment
-              </h4>
-              <div className="space-y-4">
-                <div className="p-4 rounded-xl bg-rose-950/20 border border-rose-500/30">
-                  <div className="flex items-center gap-2 text-rose-400 font-semibold text-sm mb-1">
-                    <AlertTriangle className="w-4 h-4" /> Typical Goal Apps
-                  </div>
-                  <p className="text-xs text-slate-400 leading-relaxed">
-                    &quot;Streak broken! You have 8 overdue tasks. Schedule collapsed. Start over from Day 1.&quot;
+              {/* Coach Insight Preview */}
+              <div className="mt-5 p-3.5 rounded-2xl bg-slate-950/80 border border-slate-800 flex items-start gap-3">
+                <div className="w-7 h-7 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0 text-xs">
+                  AI
+                </div>
+                <div className="text-xs space-y-1">
+                  <p className="font-semibold text-white">Coach Recommendation:</p>
+                  <p className="text-slate-400 text-[11px] leading-relaxed">
+                    &quot;Only have 20 minutes today? Complete subtask 2.1 to preserve momentum. Save the 45m architecture lab for Saturday.&quot;
                   </p>
-                  <span className="inline-block mt-2 text-[11px] text-rose-400/90 font-mono">
-                    Outcome: 82% of users abandon the goal.
-                  </span>
-                </div>
-
-                <div className="p-4 rounded-xl bg-emerald-950/30 border border-emerald-500/40">
-                  <div className="flex items-center gap-2 text-emerald-400 font-semibold text-sm mb-1">
-                    <CheckCircle2 className="w-4 h-4" /> GoalForge AI
-                  </div>
-                  <p className="text-xs text-slate-300 leading-relaxed">
-                    &quot;We noticed things were delayed this week. Life happens! Let&apos;s consolidate your next 3 days into achievable 25-minute sprints so you stay on track without burnout.&quot;
-                  </p>
-                  <span className="inline-block mt-2 text-[11px] text-emerald-400 font-mono">
-                    Outcome: 89% recovery acceptance & continuity.
-                  </span>
                 </div>
               </div>
             </div>
@@ -519,70 +354,90 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* How it Works Section */}
-      <section id="how-it-works" className="py-20 bg-slate-950 border-b border-slate-900">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center max-w-3xl mx-auto mb-16">
-            <h2 className="text-xs font-bold tracking-widest text-indigo-400 uppercase mb-2">
-              Execution Architecture
+      {/* Visual Contrast Matrix: Why Traditional Trackers Fail */}
+      <section id="matrix" className="py-20 bg-slate-950/60 border-t border-slate-900">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center max-w-xl mx-auto mb-12">
+            <h2 className="text-3xl sm:text-4xl font-black text-white tracking-tight">
+              The Slippage Moment
             </h2>
-            <p className="text-3xl sm:text-4xl font-extrabold text-white">
-              How GoalForge AI Powers Your Success
+            <p className="text-xs text-slate-400 mt-2">
+              How GoalForge AI handles the exact moment when life gets unpredictable.
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 relative">
-            <div className="bg-slate-900/60 p-6 rounded-2xl border border-slate-800 relative">
-              <span className="text-4xl font-black text-slate-800 absolute top-4 right-4">01</span>
-              <div className="w-10 h-10 rounded-lg bg-indigo-500/20 text-indigo-400 flex items-center justify-center font-bold mb-4">
-                1
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Traditional Trackers */}
+            <div className="p-6 rounded-3xl bg-rose-950/10 border border-rose-500/30 space-y-4">
+              <div className="flex items-center gap-2.5 text-rose-400 font-bold text-sm">
+                <AlertTriangle className="w-5 h-5" />
+                <span>Traditional Habit & Goal Trackers</span>
               </div>
-              <h3 className="text-lg font-bold text-white mb-2">Define Your Ambition</h3>
-              <p className="text-sm text-slate-400 leading-relaxed">
-                Tell GoalForge what you want to achieve, your target deadline, and how many minutes per day you actually have available.
-              </p>
+              <ul className="space-y-2.5 text-xs text-slate-300">
+                <li className="flex items-center gap-2">
+                  <span className="text-rose-400">✕</span> Streak broken notification creates psychological guilt.
+                </li>
+                <li className="flex items-center gap-2">
+                  <span className="text-rose-400">✕</span> Rigid calendars collapse when overtime or illness hits.
+                </li>
+                <li className="flex items-center gap-2">
+                  <span className="text-rose-400">✕</span> Overdue tasks stack into an overwhelming mountain.
+                </li>
+                <li className="flex items-center gap-2">
+                  <span className="text-rose-400">✕</span> 82% of users quit within 3 weeks of starting.
+                </li>
+              </ul>
             </div>
 
-            <div className="bg-slate-900/60 p-6 rounded-2xl border border-slate-800 relative">
-              <span className="text-4xl font-black text-slate-800 absolute top-4 right-4">02</span>
-              <div className="w-10 h-10 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold mb-4">
-                2
+            {/* GoalForge AI */}
+            <div className="p-6 rounded-3xl bg-emerald-950/20 border border-emerald-500/40 space-y-4 neon-border-emerald">
+              <div className="flex items-center gap-2.5 text-emerald-400 font-bold text-sm">
+                <CheckCircle2 className="w-5 h-5" />
+                <span>GoalForge AI Adaptive Engine</span>
               </div>
-              <h3 className="text-lg font-bold text-white mb-2">Approve Your Custom Roadmap</h3>
-              <p className="text-sm text-slate-400 leading-relaxed">
-                Review the AI-generated milestones, edit tasks, adjust time allocations, and activate the versioned roadmap when you are 100% happy.
-              </p>
-            </div>
-
-            <div className="bg-slate-900/60 p-6 rounded-2xl border border-slate-800 relative">
-              <span className="text-4xl font-black text-slate-800 absolute top-4 right-4">03</span>
-              <div className="w-10 h-10 rounded-lg bg-amber-500/20 text-amber-400 flex items-center justify-center font-bold mb-4">
-                3
-              </div>
-              <h3 className="text-lg font-bold text-white mb-2">Execute & Adapt Seamlessly</h3>
-              <p className="text-sm text-slate-400 leading-relaxed">
-                Check off daily tasks in minutes. If schedule conflicts arise, rely on automated Goal Recovery to keep your long-term outcome on target.
-              </p>
+              <ul className="space-y-2.5 text-xs text-slate-200">
+                <li className="flex items-center gap-2">
+                  <span className="text-emerald-400">✓</span> Zero guilt: slip is treated as an input to adapt.
+                </li>
+                <li className="flex items-center gap-2">
+                  <span className="text-emerald-400">✓</span> 7-day recovery ramp redistributes work safely.
+                </li>
+                <li className="flex items-center gap-2">
+                  <span className="text-emerald-400">✓</span> Capped daily workload protects against burnout.
+                </li>
+                <li className="flex items-center gap-2">
+                  <span className="text-emerald-400">✓</span> 89% of users resume and hit their milestone.
+                </li>
+              </ul>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Call to Action Banner */}
-      <section className="py-20 bg-gradient-to-b from-slate-950 via-indigo-950/20 to-slate-950">
-        <div className="max-w-4xl mx-auto px-4 text-center">
-          <h2 className="text-3xl sm:text-5xl font-black text-white tracking-tight">
-            Stop abandoning goals. Start forging results.
+      {/* Cinematic Bottom Call-to-Action */}
+      <section className="py-24 relative overflow-hidden text-center">
+        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-indigo-950/20 to-[#070a12] pointer-events-none" />
+        <div className="max-w-4xl mx-auto px-4 relative z-10 space-y-6">
+          <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-indigo-600 to-emerald-400 p-0.5 mx-auto shadow-2xl shadow-indigo-500/40">
+            <div className="w-full h-full bg-[#070a12] rounded-[14px] flex items-center justify-center">
+              <Sparkles className="w-7 h-7 text-emerald-400 animate-pulse" />
+            </div>
+          </div>
+
+          <h2 className="text-4xl sm:text-6xl font-black text-white tracking-tight">
+            Ready to Forge Your Goal in 3D?
           </h2>
-          <p className="mt-4 text-lg text-slate-300 max-w-xl mx-auto">
-            Join users turning vague ambitions into realistic, daily actionable milestones today.
+
+          <p className="text-sm sm:text-base text-slate-300 max-w-xl mx-auto font-normal">
+            Turn your ambition into an interactive roadmap, check off daily focus tasks, and recover gracefully whenever life happens.
           </p>
-          <div className="mt-8 flex justify-center">
+
+          <div className="pt-2">
             <Link
               href="/auth?mode=signup"
-              className="inline-flex items-center gap-2.5 px-8 py-4 rounded-xl font-bold text-lg bg-gradient-to-r from-indigo-600 via-indigo-500 to-emerald-500 text-white shadow-xl shadow-indigo-600/30 hover:scale-[1.03] transition-all"
+              className="inline-flex items-center gap-2.5 px-8 py-4 rounded-2xl font-bold text-base bg-gradient-to-r from-indigo-600 via-indigo-500 to-emerald-500 text-white shadow-2xl shadow-indigo-600/40 hover:scale-[1.04] transition-all"
             >
-              Get Started with GoalForge AI
+              Start Forging Free Today
               <ArrowRight className="w-5 h-5" />
             </Link>
           </div>
@@ -590,12 +445,12 @@ export default function LandingPage() {
       </section>
 
       {/* Footer */}
-      <footer className="border-t border-slate-900 bg-slate-950 py-12 text-sm text-slate-500">
+      <footer className="border-t border-slate-900 bg-[#070a12] py-10 text-xs text-slate-500">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-2">
-            <Target className="w-5 h-5 text-indigo-400" />
+            <Target className="w-4 h-4 text-indigo-400" />
             <span className="font-bold text-slate-300">GoalForge AI</span>
-            <span>— Adaptive Goal Execution Engine</span>
+            <span>— 3D Adaptive Goal Engine</span>
           </div>
           <div className="flex items-center gap-6">
             <Link href="/auth" className="hover:text-slate-300 transition-colors">
