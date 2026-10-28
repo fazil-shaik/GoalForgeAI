@@ -1,11 +1,13 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import { SessionProvider } from "@/components/providers/SessionProvider";
 import { AuthProvider } from "@/context/AuthContext";
 import { GoalProvider } from "@/context/GoalContext";
 
 export const metadata: Metadata = {
   title: "GoalForge AI — Turn Ambition Into Unstoppable Execution",
-  description: "An adaptive goal-achievement platform that turns ambitions into realistic plans, tracks execution, and helps users recover when life gets in the way.",
+  description:
+    "An adaptive goal-achievement platform that turns ambitions into realistic plans, tracks execution, and helps users recover when life gets in the way.",
 };
 
 export default function RootLayout({
@@ -15,12 +17,12 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className="h-full antialiased dark">
-      <body className="min-h-full flex flex-col bg-slate-950 text-slate-100 font-sans selection:bg-indigo-500 selection:text-white">
-        <AuthProvider>
-          <GoalProvider>
-            {children}
-          </GoalProvider>
-        </AuthProvider>
+      <body className="min-h-full flex flex-col bg-[#070a12] text-slate-100 font-sans selection:bg-indigo-500 selection:text-white">
+        <SessionProvider>
+          <AuthProvider>
+            <GoalProvider>{children}</GoalProvider>
+          </AuthProvider>
+        </SessionProvider>
       </body>
     </html>
   );

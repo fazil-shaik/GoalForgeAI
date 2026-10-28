@@ -1,0 +1,41 @@
+import { NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/server/auth/config";
+import { GoalService } from "@/server/services/goal.service";
+
+export async function GET() {
+  const session = await getServerSession(authOptions);
+  if (!session || !session.user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const userId = (session.user as any).id;
+  const goals = await GoalService.getUserGoals(userId);
+  return NextResponse.json({ goals });
+}
+
+export async function POST(req: Request) {
+  const session = await getServerSession(authOptions);
+  if (!session || !session.user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  try {
+    const body = await req.json();
+    const userId = (session.user as any).id;
+
+    const result = await GoalService.createGoalWithRoadmap(
+      userId,
+      body.goal,
+      body.milestones,
+      body.tasks
+    );
+
+    return NextResponse.json({ success: true, ...result }, { status: 201 });
+  } catch (error: any) {
+    return NextResponse.json(
+      { error: error?.message || "Failed to create goal" },
+      { status: 500 }
+    );
+  }
+}

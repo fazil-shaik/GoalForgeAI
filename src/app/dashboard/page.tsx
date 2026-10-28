@@ -1,8 +1,9 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useSession, signOut } from "next-auth/react";
 import { useAuth } from "@/context/AuthContext";
 import { useGoal } from "@/context/GoalContext";
 import {
@@ -25,7 +26,8 @@ import {
   Layers,
   RefreshCw,
   Compass,
-  Sliders
+  Sliders,
+  Lock
 } from "lucide-react";
 
 import { GoalBuilderFeature } from "@/components/dashboard/GoalBuilderFeature";
@@ -37,7 +39,8 @@ export type DashboardTab = "tasks" | "builder" | "recovery" | "coach";
 
 export default function DashboardPage() {
   const router = useRouter();
-  const { user, logout, loginAsDemo } = useAuth();
+  const { data: session, status: sessionStatus } = useSession();
+  const { user, isAuthenticated, logout, loginAsDemo } = useAuth();
   const {
     goals,
     activeGoal,
@@ -47,9 +50,49 @@ export default function DashboardPage() {
     setActiveGoalId,
   } = useGoal();
 
+  // Strict Authentication Guard (PRD F-01 & User Requirement: "authenticated then only allowed into the dashboard")
+  useEffect(() => {
+    if (sessionStatus === "unauthenticated" && !isAuthenticated && !user) {
+      router.replace("/auth?callbackUrl=/dashboard");
+    }
+  }, [sessionStatus, isAuthenticated, user, router]);
+
   const [activeTab, setActiveTab] = useState<DashboardTab>("tasks");
   const [isGoalDropdownOpen, setIsGoalDropdownOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+
+  // If checking authentication
+  if (sessionStatus === "loading") {
+    return (
+      <div className="min-h-screen bg-[#070a12] text-slate-100 flex flex-col items-center justify-center space-y-4">
+        <div className="w-10 h-10 border-4 border-indigo-500/30 border-t-indigo-500 rounded-full animate-spin" />
+        <p className="text-xs font-mono text-slate-400">Verifying GoalForge Authentication...</p>
+      </div>
+    );
+  }
+
+  // If not authenticated, block render
+  if (sessionStatus === "unauthenticated" && !isAuthenticated && !user) {
+    return null;
+  }
+
+  const currentUser = {
+    name: session?.user?.name || user?.name || "Explorer",
+    email: session?.user?.email || user?.email || "user@goalforge.ai",
+    image: session?.user?.image || user?.avatarUrl,
+    preferences: user?.preferences || {
+      availableMinutesPerDay: 45,
+      coachingStyle: "compassionate",
+    },
+  };
+
+  const handleSignOut = async () => {
+    document.cookie = "goalforge_session=; path=/; max-age=0";
+    logout();
+    await signOut({ callbackUrl: "/auth" }).catch(() => {
+      router.push("/auth");
+    });
+  };
 
   // Filter tasks for active goal
   const goalTasks = tasks.filter((t) => t.goalId === activeGoal?.id);
@@ -153,12 +196,12 @@ export default function DashboardPage() {
                 className="flex items-center gap-2 p-1.5 rounded-xl hover:bg-slate-800/80 transition-colors"
               >
                 <div className="w-8 h-8 rounded-lg bg-indigo-600/30 border border-indigo-500/40 text-indigo-300 flex items-center justify-center font-bold text-xs">
-                  {user?.name?.slice(0, 2).toUpperCase() || "GF"}
+                  {currentUser.name?.slice(0, 2).toUpperCase() || "GF"}
                 </div>
                 <div className="hidden lg:flex flex-col text-left">
-                  <span className="text-xs font-semibold text-slate-200">{user?.name || "Guest"}</span>
+                  <span className="text-xs font-semibold text-slate-200">{currentUser.name}</span>
                   <span className="text-[10px] text-emerald-400 font-mono">
-                    {user?.preferences?.availableMinutesPerDay || 45}m/d • {user?.preferences?.coachingStyle || "compassionate"}
+                    {currentUser.preferences.availableMinutesPerDay}m/d • {currentUser.preferences.coachingStyle}
                   </span>
                 </div>
                 <ChevronDown className="w-3.5 h-3.5 text-slate-400 hidden lg:inline" />
@@ -167,10 +210,10 @@ export default function DashboardPage() {
               {isUserMenuOpen && (
                 <div className="absolute right-0 mt-2 w-64 rounded-xl bg-slate-900 border border-slate-800 shadow-2xl py-2 z-50">
                   <div className="px-4 py-2 border-b border-slate-800">
-                    <p className="text-xs font-bold text-white">{user?.name}</p>
-                    <p className="text-[11px] text-slate-400 truncate">{user?.email}</p>
+                    <p className="text-xs font-bold text-white">{currentUser.name}</p>
+                    <p className="text-[11px] text-slate-400 truncate">{currentUser.email}</p>
                     <div className="mt-1.5 flex items-center gap-2 text-[10px] text-indigo-400 bg-indigo-950/40 px-2 py-0.5 rounded border border-indigo-500/20">
-                      <span>Coaching: {user?.preferences?.coachingStyle}</span>
+                      <span>Coaching: {currentUser.preferences.coachingStyle}</span>
                     </div>
                   </div>
 
@@ -198,10 +241,7 @@ export default function DashboardPage() {
 
                   <div className="border-t border-slate-800 mt-2 pt-1">
                     <button
-                      onClick={() => {
-                        logout();
-                        router.push("/auth");
-                      }}
+                      onClick={handleSignOut}
                       className="w-full text-left px-4 py-2 text-xs font-semibold text-rose-400 hover:bg-rose-950/30 flex items-center gap-2"
                     >
                       <LogOut className="w-3.5 h-3.5" /> Sign Out
