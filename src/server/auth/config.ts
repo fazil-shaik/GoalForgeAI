@@ -1,8 +1,8 @@
 import { NextAuthOptions } from "next-auth";
 import GoogleProvider from "next-auth/providers/google";
 import { getDb } from "@/db";
-import { users } from "@/db/schema";
-import { eq } from "drizzle-orm";
+import { users, accounts } from "@/db/schema";
+import { eq, and } from "drizzle-orm";
 
 export const authOptions: NextAuthOptions = {
   providers: [
@@ -27,49 +27,102 @@ export const authOptions: NextAuthOptions = {
     maxAge: 30 * 24 * 60 * 60, // 30 days
   },
   callbacks: {
-    async signIn({ user, account, profile }) {
+    async signIn({ user, account }) {
       if (!user.email) return false;
 
-      // Sync or persist to Neon PostgreSQL if database connection is available
+      // Save / update real user and account in Neon PostgreSQL database
       try {
         const db = getDb();
         if (db) {
-          const existing = await db
+          // 1. Check or insert into users table
+          const existingUsers = await db
             .select()
             .from(users)
             .where(eq(users.email, user.email))
             .limit(1);
 
-          if (existing.length === 0) {
-            await db.insert(users).values({
-              name: user.name || "GoalForge Explorer",
-              email: user.email,
-              image: user.image,
-              emailVerified: new Date(),
-              timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC",
-              preferences: {
-                availableMinutesPerDay: 45,
-                availableDays: [
-                  "Monday",
-                  "Tuesday",
-                  "Wednesday",
-                  "Thursday",
-                  "Friday",
-                ],
-                coachingStyle: "compassionate",
-                primaryCategory: "Software Engineering & Cloud",
-              },
-            });
+          let dbUserId: string;
+
+          if (existingUsers.length > 0) {
+            dbUserId = existingUsers[0].id;
+            // Update name and avatar if changed
+            await db
+              .update(users)
+              .set({
+                name: user.name || existingUsers[0].name,
+                image: user.image || existingUsers[0].image,
+                updatedAt: new Date(),
+              })
+              .where(eq(users.id, dbUserId));
+          } else {
+            const inserted = await db
+              .insert(users)
+              .values({
+                name: user.name || "GoalForge Explorer",
+                email: user.email,
+                image: user.image,
+                emailVerified: new Date(),
+                timezone:
+                  Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC",
+                preferences: {
+                  availableMinutesPerDay: 45,
+                  availableDays: [
+                    "Monday",
+                    "Tuesday",
+                    "Wednesday",
+                    "Thursday",
+                    "Friday",
+                  ],
+                  coachingStyle: "compassionate",
+                  primaryCategory: "Software Engineering & Cloud",
+                },
+              })
+              .returning();
+            dbUserId = inserted[0].id;
           }
+
+          // 2. Link account record if account provided
+          if (account && account.providerAccountId) {
+            const existingAccount = await db
+              .select()
+              .from(accounts)
+              .where(
+                and(
+                  eq(accounts.provider, account.provider),
+                  eq(accounts.providerAccountId, account.providerAccountId)
+                )
+              )
+              .limit(1);
+
+            if (existingAccount.length === 0) {
+              await db.insert(accounts).values({
+                userId: dbUserId,
+                type: account.type || "oauth",
+                provider: account.provider,
+                providerAccountId: account.providerAccountId,
+                refresh_token: account.refresh_token,
+                access_token: account.access_token,
+                expires_at: account.expires_at,
+                token_type: account.token_type,
+                scope: account.scope,
+                id_token: account.id_token,
+                session_state: (account as any).session_state,
+              });
+            }
+          }
+
+          // Attach database UUID to user object so jwt callback receives it
+          (user as any).dbId = dbUserId;
         }
       } catch (err) {
-        console.error("Error syncing Google OAuth user to database:", err);
+        console.error("Database save error during Google OAuth signIn:", err);
       }
       return true;
     },
-    async jwt({ token, user, trigger, session }) {
+
+    async jwt({ token, user, account, trigger, session }) {
       if (user) {
-        token.id = user.id;
+        token.id = (user as any).dbId || user.id || token.sub;
         token.email = user.email;
         token.name = user.name;
         token.picture = user.image;
@@ -79,6 +132,7 @@ export const authOptions: NextAuthOptions = {
       }
       return token;
     },
+
     async session({ session, token }) {
       if (session.user) {
         (session.user as any).id = token.id || token.sub;
@@ -98,5 +152,7 @@ export const authOptions: NextAuthOptions = {
       return session;
     },
   },
-  secret: process.env.NEXTAUTH_SECRET || "goalforge_super_secure_jwt_secret_dev_32_chars",
+  secret:
+    process.env.NEXTAUTH_SECRET ||
+    "goalforge_super_secure_jwt_secret_dev_32_chars",
 };

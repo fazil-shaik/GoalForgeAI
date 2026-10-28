@@ -40,7 +40,7 @@ export type DashboardTab = "tasks" | "builder" | "recovery" | "coach";
 export default function DashboardPage() {
   const router = useRouter();
   const { data: session, status: sessionStatus } = useSession();
-  const { user, isAuthenticated, logout, loginAsDemo } = useAuth();
+  const { user, isAuthenticated, logout } = useAuth();
   const {
     goals,
     activeGoal,
@@ -50,12 +50,12 @@ export default function DashboardPage() {
     setActiveGoalId,
   } = useGoal();
 
-  // Strict Authentication Guard (PRD F-01 & User Requirement: "authenticated then only allowed into the dashboard")
+  // Strict Google OAuth Guard: without session, strictly no access to dashboard
   useEffect(() => {
-    if (sessionStatus === "unauthenticated" && !isAuthenticated && !user) {
+    if (sessionStatus === "unauthenticated") {
       router.replace("/auth?callbackUrl=/dashboard");
     }
-  }, [sessionStatus, isAuthenticated, user, router]);
+  }, [sessionStatus, router]);
 
   const [activeTab, setActiveTab] = useState<DashboardTab>("tasks");
   const [isGoalDropdownOpen, setIsGoalDropdownOpen] = useState(false);
@@ -66,21 +66,21 @@ export default function DashboardPage() {
     return (
       <div className="min-h-screen bg-[#070a12] text-slate-100 flex flex-col items-center justify-center space-y-4">
         <div className="w-10 h-10 border-4 border-indigo-500/30 border-t-indigo-500 rounded-full animate-spin" />
-        <p className="text-xs font-mono text-slate-400">Verifying GoalForge Authentication...</p>
+        <p className="text-xs font-mono text-slate-400">Verifying Google OAuth Session...</p>
       </div>
     );
   }
 
-  // If not authenticated, block render
-  if (sessionStatus === "unauthenticated" && !isAuthenticated && !user) {
+  // Without verified session, deny access
+  if (sessionStatus === "unauthenticated" || !session) {
     return null;
   }
 
   const currentUser = {
-    name: session?.user?.name || user?.name || "Explorer",
-    email: session?.user?.email || user?.email || "user@goalforge.ai",
-    image: session?.user?.image || user?.avatarUrl,
-    preferences: user?.preferences || {
+    name: session?.user?.name || "GoalForge User",
+    email: session?.user?.email || "",
+    image: session?.user?.image,
+    preferences: (session?.user as any)?.preferences || {
       availableMinutesPerDay: 45,
       coachingStyle: "compassionate",
     },
@@ -217,27 +217,14 @@ export default function DashboardPage() {
                     </div>
                   </div>
 
-                  <div className="px-3 py-2 text-[10px] uppercase font-bold text-slate-400 tracking-wider">
-                    Switch Persona Demo
+                  <div className="px-4 py-2 text-[10px] text-slate-400 space-y-1">
+                    <p className="flex items-center gap-1.5 text-emerald-400 font-semibold">
+                      <ShieldCheck className="w-3.5 h-3.5" /> Google OAuth Verified
+                    </p>
+                    <p className="text-[10px] text-slate-500">
+                      User record synced with Neon PostgreSQL.
+                    </p>
                   </div>
-                  <button
-                    onClick={() => { loginAsDemo("learner"); setIsUserMenuOpen(false); }}
-                    className="w-full text-left px-4 py-1.5 text-xs text-slate-300 hover:bg-slate-800"
-                  >
-                    Alex Rivera (Overwhelmed Learner)
-                  </button>
-                  <button
-                    onClick={() => { loginAsDemo("professional"); setIsUserMenuOpen(false); }}
-                    className="w-full text-left px-4 py-1.5 text-xs text-slate-300 hover:bg-slate-800"
-                  >
-                    Sarah Chen (Busy Professional)
-                  </button>
-                  <button
-                    onClick={() => { loginAsDemo("starter"); setIsUserMenuOpen(false); }}
-                    className="w-full text-left px-4 py-1.5 text-xs text-slate-300 hover:bg-slate-800"
-                  >
-                    Marcus Vance (Inconsistent Starter)
-                  </button>
 
                   <div className="border-t border-slate-800 mt-2 pt-1">
                     <button

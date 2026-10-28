@@ -4,14 +4,13 @@ import type { NextRequest } from "next/server";
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // Protect /dashboard and /dashboard/*
+  // Protect /dashboard and all subroutes
   if (pathname.startsWith("/dashboard")) {
     const sessionToken =
       request.cookies.get("next-auth.session-token")?.value ||
-      request.cookies.get("__Secure-next-auth.session-token")?.value ||
-      request.cookies.get("goalforge_session")?.value;
+      request.cookies.get("__Secure-next-auth.session-token")?.value;
 
-    // Check if authenticated
+    // Without valid Google OAuth session token, strictly deny access
     if (!sessionToken) {
       const authUrl = new URL("/auth", request.url);
       authUrl.searchParams.set("callbackUrl", pathname);

@@ -4,16 +4,14 @@ import React, { useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { signIn, useSession } from "next-auth/react";
-import { useAuth } from "@/context/AuthContext";
 import {
   Target,
   ArrowRight,
   ShieldCheck,
   Sparkles,
-  Lock,
   ArrowLeft,
-  CheckCircle2,
-  AlertCircle
+  AlertCircle,
+  Lock
 } from "lucide-react";
 
 function GoogleIcon() {
@@ -45,53 +43,27 @@ function AuthContent() {
   const callbackUrl = searchParams.get("callbackUrl") || "/dashboard";
 
   const { data: session, status } = useSession();
-  const { user, loginAsDemo } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
 
-  // If already authenticated via NextAuth or context, redirect to dashboard
+  // If already authenticated via real Google session, redirect to dashboard
   React.useEffect(() => {
-    if (status === "authenticated" || user) {
-      document.cookie = "goalforge_session=active; path=/; max-age=2592000";
+    if (status === "authenticated") {
+      router.replace(callbackUrl);
     }
-  }, [status, user]);
+  }, [status, callbackUrl, router]);
 
   const handleGoogleSignIn = async () => {
     setIsLoading(true);
     setErrorMsg("");
     try {
-      // Trigger NextAuth Google OAuth
-      document.cookie = "goalforge_session=active; path=/; max-age=2592000";
-      const result = await signIn("google", {
+      await signIn("google", {
         callbackUrl,
-        redirect: false,
       });
-
-      if (result?.error) {
-        setErrorMsg(
-          "Google OAuth requires GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET in .env. You can use the Quick Developer Sign-In below while configuring your Google Cloud Console."
-        );
-        setIsLoading(false);
-      } else if (result?.url) {
-        router.push(result.url);
-      } else {
-        router.push(callbackUrl);
-      }
     } catch {
-      setErrorMsg(
-        "Could not connect to Google OAuth service. Please ensure GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET are configured in .env."
-      );
+      setErrorMsg("Failed to initialize Google OAuth. Please check your network connection.");
       setIsLoading(false);
     }
-  };
-
-  const handleTestDevSignIn = (persona: "learner" | "professional" | "starter") => {
-    setIsLoading(true);
-    document.cookie = "goalforge_session=active; path=/; max-age=2592000";
-    loginAsDemo(persona);
-    setTimeout(() => {
-      router.push(callbackUrl);
-    }, 400);
   };
 
   return (
@@ -107,90 +79,70 @@ function AuthContent() {
           className="inline-flex items-center gap-2 text-xs font-medium text-slate-400 hover:text-white transition-colors"
         >
           <ArrowLeft className="w-3.5 h-3.5" />
-          Back to GoalForge AI Home
+          Back to GoalForge AI
         </Link>
       </div>
 
       <div className="sm:mx-auto sm:w-full sm:max-w-md text-center">
         <Link href="/" className="inline-flex items-center gap-2.5 group">
-          <div className="w-11 h-11 rounded-xl bg-gradient-to-tr from-indigo-600 via-indigo-500 to-emerald-400 p-0.5 shadow-lg shadow-indigo-500/30">
-            <div className="w-full h-full bg-[#070a12] rounded-[10px] flex items-center justify-center">
+          <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-indigo-600 via-indigo-500 to-emerald-400 p-0.5 shadow-xl shadow-indigo-500/30">
+            <div className="w-full h-full bg-[#070a12] rounded-[14px] flex items-center justify-center">
               <Target className="w-6 h-6 text-indigo-400 group-hover:text-emerald-400 transition-colors" />
             </div>
           </div>
-          <span className="font-extrabold text-2xl tracking-tight text-white">
-            GoalForge <span className="text-emerald-400">AI</span>
-          </span>
         </Link>
-        <h2 className="mt-3 text-xl font-bold tracking-tight text-white">
-          Sign In to Your Workspace
+        <h2 className="mt-4 text-2xl font-black tracking-tight text-white">
+          Sign In to GoalForge AI
         </h2>
-        <p className="mt-1 text-xs text-slate-400">
-          Only authenticated users can access the GoalForge execution dashboard.
+        <p className="mt-1 text-xs text-slate-400 max-w-sm mx-auto">
+          Authenticate with your Google account to access your adaptive goal roadmap and execution dashboard.
         </p>
       </div>
 
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
-        <div className="glass-card py-8 px-6 shadow-2xl rounded-3xl sm:px-10 border border-white/10 backdrop-blur-xl space-y-6">
+        <div className="glass-card py-9 px-6 shadow-2xl rounded-3xl sm:px-10 border border-white/10 backdrop-blur-xl space-y-6">
           {errorMsg && (
-            <div className="p-3.5 rounded-xl bg-amber-950/40 border border-amber-500/40 text-xs text-amber-200 flex items-start gap-2.5">
-              <AlertCircle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
+            <div className="p-3.5 rounded-xl bg-rose-950/40 border border-rose-500/40 text-xs text-rose-300 flex items-start gap-2.5">
+              <AlertCircle className="w-4 h-4 text-rose-400 shrink-0 mt-0.5" />
               <span>{errorMsg}</span>
             </div>
           )}
 
-          {/* Primary Authentication: Google OAuth (PRD F-01 Requirement) */}
+          {/* Pure Google OAuth Button */}
           <div className="space-y-4">
             <button
               type="button"
-              disabled={isLoading}
+              disabled={isLoading || status === "loading"}
               onClick={handleGoogleSignIn}
-              className="w-full flex items-center justify-center gap-3 py-3.5 px-4 rounded-2xl bg-white hover:bg-slate-100 text-slate-900 font-bold text-sm shadow-xl transition-all hover:scale-[1.02] disabled:opacity-50 group"
+              className="w-full flex items-center justify-center gap-3 py-4 px-5 rounded-2xl bg-white hover:bg-slate-100 text-slate-900 font-bold text-sm shadow-xl transition-all hover:scale-[1.02] disabled:opacity-50 group cursor-pointer"
             >
-              <GoogleIcon />
-              <span>Continue with Google</span>
-              <ArrowRight className="w-4 h-4 ml-auto text-slate-400 group-hover:translate-x-0.5 transition-transform" />
+              {isLoading || status === "loading" ? (
+                <div className="w-5 h-5 border-2 border-slate-900/30 border-t-slate-900 rounded-full animate-spin" />
+              ) : (
+                <GoogleIcon />
+              )}
+              <span>
+                {isLoading || status === "loading"
+                  ? "Redirecting to Google..."
+                  : "Continue with Google"}
+              </span>
+              <ArrowRight className="w-4 h-4 ml-auto text-slate-400 group-hover:translate-x-1 transition-transform" />
             </button>
 
-            <div className="flex items-center gap-2 text-[11px] text-slate-400 justify-center">
-              <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
-              <span>Secure Google OAuth 2.0 • Zero Password Hassle</span>
+            <div className="p-3.5 rounded-2xl bg-slate-950/70 border border-slate-800 text-[11px] text-slate-400 space-y-1.5">
+              <div className="flex items-center gap-2 text-slate-300 font-semibold">
+                <ShieldCheck className="w-4 h-4 text-emerald-400" />
+                <span>Single-Click Verified OAuth 2.0</span>
+              </div>
+              <p className="text-slate-500 text-[10px] leading-relaxed">
+                Your profile, email, and preferences will be securely saved into Neon PostgreSQL database via Drizzle ORM.
+              </p>
             </div>
           </div>
 
-          <div className="relative flex py-2 items-center">
-            <div className="flex-grow border-t border-slate-800"></div>
-            <span className="flex-shrink mx-4 text-[10px] text-slate-500 font-mono uppercase">
-              Or Instant Developer Verification
-            </span>
-            <div className="flex-grow border-t border-slate-800"></div>
-          </div>
-
-          {/* Instant Developer / Demo OAuth verification */}
-          <div className="space-y-2">
-            <span className="text-[11px] text-slate-400 block text-center">
-              Click below to test the authenticated dashboard flow immediately:
-            </span>
-            <div className="grid grid-cols-1 gap-2">
-              <button
-                type="button"
-                onClick={() => handleTestDevSignIn("learner")}
-                className="w-full p-2.5 rounded-xl bg-slate-900/80 hover:bg-slate-800 border border-slate-800 hover:border-indigo-500 text-left transition-all flex items-center justify-between"
-              >
-                <div>
-                  <p className="text-xs font-bold text-white">Alex Rivera</p>
-                  <p className="text-[10px] text-slate-400">Overwhelmed Learner • AWS Cert Goal</p>
-                </div>
-                <span className="text-[10px] font-mono text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded">
-                  Auth Demo →
-                </span>
-              </button>
-            </div>
-          </div>
-
-          <div className="pt-4 border-t border-slate-800/80 text-center text-[11px] text-slate-500 space-y-1">
-            <p>Protected by Neon PostgreSQL & Auth.js OAuth Session Guards.</p>
-            <p>Your goal data remains encrypted and private by design.</p>
+          <div className="pt-2 border-t border-slate-800/80 text-center text-[10px] text-slate-500 space-y-1">
+            <p>Protected by NextAuth Google OAuth & Drizzle Database Session Guards.</p>
+            <p>Without authentication, access to the dashboard is strictly forbidden.</p>
           </div>
         </div>
       </div>
@@ -203,7 +155,7 @@ export default function AuthPage() {
     <Suspense
       fallback={
         <div className="min-h-screen bg-[#070a12] text-slate-200 flex items-center justify-center">
-          Loading GoalForge Auth...
+          Loading GoalForge Authentication...
         </div>
       }
     >
