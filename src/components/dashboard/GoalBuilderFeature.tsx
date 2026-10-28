@@ -1,0 +1,604 @@
+"use client";
+
+import React, { useState } from "react";
+import { useAuth } from "@/context/AuthContext";
+import { useGoal } from "@/context/GoalContext";
+import {
+  Sparkles,
+  Target,
+  Calendar,
+  Clock,
+  CheckCircle2,
+  AlertTriangle,
+  ArrowRight,
+  Plus,
+  Trash2,
+  Edit2,
+  Check,
+  ChevronDown,
+  ChevronUp,
+  Brain,
+  ShieldCheck,
+  Zap,
+  RotateCcw
+} from "lucide-react";
+
+interface DraftMilestone {
+  title: string;
+  description: string;
+  dueDate: string;
+  completionCriteria: string[];
+  tasks: DraftTask[];
+}
+
+interface DraftTask {
+  title: string;
+  description: string;
+  estimatedMinutes: number;
+  dueDate: string;
+  priority: "high" | "normal" | "low";
+  completionCriteria: string;
+}
+
+const STARTER_TEMPLATES = [
+  {
+    title: "Pass CKA (Certified Kubernetes Administrator)",
+    ambition: "Master Kubernetes administration, pod networking, ingress, and cluster troubleshooting to pass the CKA exam.",
+    category: "Software Engineering & Cloud",
+    baseline: "Proficient with Docker containers and Linux commands; basic Kubernetes pod knowledge.",
+    targetWeeks: 6,
+    dailyMinutes: 45,
+  },
+  {
+    title: "Train for a 10k Run in 8 Weeks",
+    ambition: "Build cardiovascular endurance safely with progressive interval runs, tempo days, and recovery routines.",
+    category: "Health, Habits & Fitness",
+    baseline: "Can jog 2.5km without stopping; no current injuries.",
+    targetWeeks: 8,
+    dailyMinutes: 40,
+  },
+  {
+    title: "Build and Launch a Next.js Micro-SaaS",
+    ambition: "Create a focused micro-SaaS with authentication, Stripe billing, and a landing page, launched to 20 beta users.",
+    category: "Entrepreneurship & Product",
+    baseline: "Comfortable with React and TypeScript, some backend experience.",
+    targetWeeks: 5,
+    dailyMinutes: 50,
+  },
+];
+
+export function GoalBuilderFeature({ onGoalActivated }: { onGoalActivated?: () => void }) {
+  const { user } = useAuth();
+  const { createGoalWithRoadmap } = useGoal();
+
+  // Form State
+  const [ambition, setAmbition] = useState("");
+  const [category, setCategory] = useState("Software Engineering & Cloud");
+  const [baseline, setBaseline] = useState("");
+  const [targetDate, setTargetDate] = useState("2026-12-15");
+  const [dailyMinutes, setDailyMinutes] = useState(user?.preferences?.availableMinutesPerDay || 45);
+  const [constraints, setConstraints] = useState("Keep weekday sessions under 45 minutes; reserve longer deep-work for Saturdays.");
+
+  // Generation & Review State
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [generatedDraft, setGeneratedDraft] = useState<{
+    title: string;
+    outcome: string;
+    targetMetric: string;
+    targetValue: string;
+    feasibilityRisk: "low_risk" | "moderate_risk" | "high_risk";
+    feasibilitySummary: string;
+    assumptions: string[];
+    milestones: DraftMilestone[];
+  } | null>(null);
+
+  // Apply a starter template
+  const applyTemplate = (tpl: typeof STARTER_TEMPLATES[0]) => {
+    setAmbition(tpl.ambition);
+    setCategory(tpl.category);
+    setBaseline(tpl.baseline);
+    setDailyMinutes(tpl.dailyMinutes);
+    const date = new Date(Date.now() + tpl.targetWeeks * 7 * 24 * 60 * 60 * 1000);
+    setTargetDate(date.toISOString().split("T")[0]);
+  };
+
+  // Simulate AI Roadmap Generation according to PRD Prompt A, B, & C
+  const handleGenerateRoadmap = () => {
+    if (!ambition.trim()) return;
+
+    setIsGenerating(true);
+
+    setTimeout(() => {
+      // Synthesize realistic structured goal & milestones based on input
+      const title = ambition.length > 40 ? ambition.slice(0, 38) + "..." : ambition;
+      const isTech = category.includes("Software") || category.includes("Tech") || ambition.toLowerCase().includes("code");
+
+      const draft = {
+        title: isTech ? "Master Modern Backend & Distributed Architecture" : `Goal: ${title}`,
+        outcome: `Achieve verified proficiency and complete tangible deliverables in ${category}`,
+        targetMetric: isTech ? "Portfolio projects & benchmark exam score" : "Weekly consistency score & milestone checkoffs",
+        targetValue: ">= 85% completion rate",
+        feasibilityRisk: dailyMinutes < 30 ? ("high_risk" as const) : ("moderate_risk" as const),
+        feasibilitySummary: `At ${dailyMinutes} minutes/day, your timeline allows for approximately 35 total study hours. With standard buffers, this fits within a moderate risk profile.`,
+        assumptions: [
+          `Declared capacity of ${dailyMinutes} min/day holds steady throughout the horizon`,
+          "User has prerequisite foundational knowledge indicated in baseline",
+          "Includes 1 buffer day every 2 weeks for rest or unexpected life events",
+        ],
+        milestones: [
+          {
+            title: "Milestone 1: Foundations, Core Theory & Environment Setup",
+            description: "Establish environment, master syntax primitives, and build initial proof of concept.",
+            dueDate: "2026-11-10",
+            completionCriteria: ["Complete core interactive labs", "Pass initial diagnostic check"],
+            tasks: [
+              {
+                title: "Set up isolated development workspace & documentation folder",
+                description: "Configure workspace, clone starter boilerplate, and verify test runner.",
+                estimatedMinutes: 30,
+                dueDate: "2026-10-30",
+                priority: "high" as const,
+                completionCriteria: "Workspace environment verified with hello-world sample running",
+              },
+              {
+                title: "Complete Core Architecture Deep-Dive modules (1-3)",
+                description: "Study memory management, concurrency models, and network boundaries.",
+                estimatedMinutes: 45,
+                dueDate: "2026-11-02",
+                priority: "high" as const,
+                completionCriteria: "Summarize key architectural takeaways in 5 bullet points",
+              },
+              {
+                title: "Build standalone mini-service prototype",
+                description: "Write end-to-end integration test validating basic input/output behavior.",
+                estimatedMinutes: 40,
+                dueDate: "2026-11-06",
+                priority: "normal" as const,
+                completionCriteria: "All unit and integration tests passing locally",
+              },
+            ],
+          },
+          {
+            title: "Milestone 2: Production Readiness, Optimization & Scenarios",
+            description: "Harden for scale, configure security guardrails, and run real-world drills.",
+            dueDate: "2026-11-28",
+            completionCriteria: ["Pass mock drills with >= 80% accuracy", "Profile and eliminate bottlenecks"],
+            tasks: [
+              {
+                title: "Implement authentication, RBAC, and error isolation",
+                description: "Apply defensive authorization and structured logging across boundaries.",
+                estimatedMinutes: 45,
+                dueDate: "2026-11-15",
+                priority: "high" as const,
+                completionCriteria: "Test auth failure scenarios and verify safe degradation",
+              },
+              {
+                title: "Run full-scale load and reliability drill",
+                description: "Simulate network partitions and check automated recovery behavior.",
+                estimatedMinutes: 40,
+                dueDate: "2026-11-22",
+                priority: "normal" as const,
+                completionCriteria: "Verify recovery time under 30 seconds",
+              },
+            ],
+          },
+          {
+            title: "Milestone 3: Final Certification / Public Launch",
+            description: "Deliver final outcome, review lessons learned, and lock in long-term retention.",
+            dueDate: targetDate || "2026-12-15",
+            completionCriteria: ["Achieve targeted metric and document outcome evidence"],
+            tasks: [
+              {
+                title: "Conduct comprehensive review of lessons learned & edge cases",
+                description: "Revisit past notes, flashcards, or blocker logs to reinforce mastery.",
+                estimatedMinutes: 35,
+                dueDate: "2026-12-05",
+                priority: "normal" as const,
+                completionCriteria: "Complete retrospective log",
+              },
+              {
+                title: "Execute final target milestone delivery or test sitting",
+                description: "Complete the exam or publish project MVP to real users.",
+                estimatedMinutes: 60,
+                dueDate: targetDate || "2026-12-15",
+                priority: "high" as const,
+                completionCriteria: "Target outcome confirmed with recorded evidence",
+              },
+            ],
+          },
+        ],
+      };
+
+      setGeneratedDraft(draft);
+      setIsGenerating(false);
+    }, 1200);
+  };
+
+  // Modify draft task during review
+  const handleRemoveDraftTask = (mIndex: number, tIndex: number) => {
+    if (!generatedDraft) return;
+    const nextMilestones = [...generatedDraft.milestones];
+    nextMilestones[mIndex].tasks.splice(tIndex, 1);
+    setGeneratedDraft({
+      ...generatedDraft,
+      milestones: nextMilestones,
+    });
+  };
+
+  // PRD F-06: Roadmap Editor & Explicit Approval
+  const handleApproveRoadmap = () => {
+    if (!generatedDraft) return;
+
+    // Flatten milestones and tasks for context
+    const flatMilestones = generatedDraft.milestones.map((m, idx) => ({
+      title: m.title,
+      description: m.description,
+      dueDate: m.dueDate,
+      status: (idx === 0 ? "in_progress" : "pending") as "pending" | "in_progress",
+      completionCriteria: m.completionCriteria,
+      order: idx + 1,
+    }));
+
+    const flatTasks: Array<{
+      milestoneId: string;
+      title: string;
+      description: string;
+      estimatedMinutes: number;
+      dueDate: string;
+      priority: "high" | "normal" | "low";
+      status: "todo";
+      completionCriteria: string;
+    }> = [];
+
+    generatedDraft.milestones.forEach((m, mIdx) => {
+      m.tasks.forEach((t) => {
+        flatTasks.push({
+          milestoneId: `m_${mIdx + 1}`,
+          title: t.title,
+          description: t.description,
+          estimatedMinutes: t.estimatedMinutes,
+          dueDate: t.dueDate,
+          priority: t.priority,
+          status: "todo",
+          completionCriteria: t.completionCriteria,
+        });
+      });
+    });
+
+    createGoalWithRoadmap(
+      {
+        title: generatedDraft.title,
+        outcome: generatedDraft.outcome,
+        category,
+        baseline: baseline || "Initial baseline recorded",
+        targetMetric: generatedDraft.targetMetric,
+        targetValue: generatedDraft.targetValue,
+        deadline: targetDate,
+        status: "active",
+        feasibilityRisk: generatedDraft.feasibilityRisk,
+      },
+      flatMilestones,
+      flatTasks
+    );
+
+    // Reset draft
+    setGeneratedDraft(null);
+    setAmbition("");
+    if (onGoalActivated) onGoalActivated();
+  };
+
+  return (
+    <div className="space-y-8 animate-fadeIn">
+      {/* Header */}
+      <div>
+        <div className="flex items-center gap-2">
+          <div className="w-8 h-8 rounded-lg bg-indigo-500/20 text-indigo-400 flex items-center justify-center">
+            <Sparkles className="w-4 h-4" />
+          </div>
+          <h2 className="text-xl font-bold text-white">AI Goal & Roadmap Builder</h2>
+        </div>
+        <p className="text-xs text-slate-400 mt-1">
+          Turn your high-level ambition into a realistic, capacity-checked roadmap with milestones, time estimates, and dependencies.
+        </p>
+      </div>
+
+      {/* Starter Templates Picker */}
+      {!generatedDraft && (
+        <div className="bg-slate-900/60 p-4 rounded-xl border border-slate-800">
+          <span className="text-xs font-semibold text-slate-300 flex items-center gap-1.5 mb-2.5">
+            <Zap className="w-3.5 h-3.5 text-amber-400" /> Or pick a quick starter template:
+          </span>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            {STARTER_TEMPLATES.map((tpl, i) => (
+              <button
+                key={i}
+                type="button"
+                onClick={() => applyTemplate(tpl)}
+                className="p-3 rounded-lg bg-slate-950/80 border border-slate-800 hover:border-indigo-500 text-left transition-all group"
+              >
+                <p className="text-xs font-bold text-slate-200 group-hover:text-indigo-300">
+                  {tpl.title}
+                </p>
+                <p className="text-[11px] text-slate-400 mt-1 line-clamp-2">
+                  {tpl.ambition}
+                </p>
+                <div className="mt-2 flex items-center gap-2 text-[10px] text-emerald-400 font-mono">
+                  <span>{tpl.targetWeeks} wks</span> • <span>{tpl.dailyMinutes} min/d</span>
+                </div>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* If No Draft Generated: Show Form */}
+      {!generatedDraft ? (
+        <div className="bg-slate-900/80 p-6 rounded-2xl border border-slate-800 shadow-xl space-y-5">
+          <div>
+            <label className="block text-xs font-bold text-slate-200 mb-1">
+              What outcome or ambition do you want to achieve? *
+            </label>
+            <textarea
+              rows={3}
+              value={ambition}
+              onChange={(e) => setAmbition(e.target.value)}
+              placeholder="e.g. Master system design and pass the AWS Solutions Architect exam within 6 weeks without burning out."
+              className="w-full p-3 rounded-xl bg-slate-950 border border-slate-700 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all"
+            />
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-bold text-slate-200 mb-1">
+                Goal Category
+              </label>
+              <select
+                value={category}
+                onChange={(e) => setCategory(e.target.value)}
+                className="w-full p-2.5 rounded-xl bg-slate-950 border border-slate-700 text-xs text-slate-200 focus:outline-none focus:border-indigo-500"
+              >
+                <option>Software Engineering & Cloud</option>
+                <option>Health, Habits & Fitness</option>
+                <option>Entrepreneurship & Product</option>
+                <option>Career Growth & Leadership</option>
+                <option>Languages & Skill Mastery</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-slate-200 mb-1">
+                Target Deadline
+              </label>
+              <input
+                type="date"
+                value={targetDate}
+                onChange={(e) => setTargetDate(e.target.value)}
+                className="w-full p-2.5 rounded-xl bg-slate-950 border border-slate-700 text-xs text-slate-200 focus:outline-none focus:border-indigo-500"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-bold text-slate-200 mb-1">
+                Current Starting Point / Baseline Knowledge
+              </label>
+              <input
+                type="text"
+                value={baseline}
+                onChange={(e) => setBaseline(e.target.value)}
+                placeholder="e.g. 1 year of programming, basic Docker concepts"
+                className="w-full p-2.5 rounded-xl bg-slate-950 border border-slate-700 text-xs text-slate-200 focus:outline-none focus:border-indigo-500"
+              />
+            </div>
+
+            <div>
+              <div className="flex items-center justify-between mb-1">
+                <label className="text-xs font-bold text-slate-200">
+                  Daily Available Capacity
+                </label>
+                <span className="text-xs font-bold text-indigo-400 font-mono">{dailyMinutes} min/day</span>
+              </div>
+              <input
+                type="range"
+                min={15}
+                max={120}
+                step={5}
+                value={dailyMinutes}
+                onChange={(e) => setDailyMinutes(Number(e.target.value))}
+                className="w-full accent-indigo-500"
+              />
+              <div className="flex justify-between text-[10px] text-slate-500 mt-1">
+                <span>15m (Light)</span>
+                <span>45m (Standard)</span>
+                <span>90m (Intensive)</span>
+                <span>120m</span>
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-xs font-bold text-slate-200 mb-1">
+              Schedule Constraints & Guardrails
+            </label>
+            <input
+              type="text"
+              value={constraints}
+              onChange={(e) => setConstraints(e.target.value)}
+              placeholder="e.g. No evening work on Thursdays; focus on deep blocks on weekends"
+              className="w-full p-2.5 rounded-xl bg-slate-950 border border-slate-700 text-xs text-slate-200 focus:outline-none focus:border-indigo-500"
+            />
+          </div>
+
+          <div className="pt-2">
+            <button
+              type="button"
+              disabled={isGenerating || !ambition.trim()}
+              onClick={handleGenerateRoadmap}
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-indigo-600 to-emerald-500 hover:from-indigo-500 hover:to-emerald-400 text-white font-bold text-sm shadow-lg shadow-indigo-600/25 transition-all hover:scale-[1.01] disabled:opacity-50"
+            >
+              {isGenerating ? (
+                <>
+                  <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  <span>Analyzing Feasibility & Synthesizing Milestones...</span>
+                </>
+              ) : (
+                <>
+                  <Sparkles className="w-4 h-4" />
+                  <span>Generate Adaptive Roadmap with AI</span>
+                  <ArrowRight className="w-4 h-4" />
+                </>
+              )}
+            </button>
+          </div>
+        </div>
+      ) : (
+        /* Generated Roadmap Preview & Approval (PRD F-04, F-05, F-06) */
+        <div className="space-y-6">
+          {/* AI Feasibility Assessment Card */}
+          <div className="bg-slate-900/90 p-5 rounded-2xl border border-indigo-500/30 shadow-xl space-y-3">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-bold uppercase tracking-wider text-indigo-400">
+                  AI Feasibility & Risk Analysis
+                </span>
+                <span
+                  className={`px-2 py-0.5 rounded text-xs font-bold font-mono ${
+                    generatedDraft.feasibilityRisk === "low_risk"
+                      ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30"
+                      : "bg-amber-500/20 text-amber-300 border border-amber-500/30"
+                  }`}
+                >
+                  {generatedDraft.feasibilityRisk.replace("_", " ").toUpperCase()}
+                </span>
+              </div>
+              <span className="text-xs text-slate-400 font-mono">
+                Declared: {dailyMinutes} min/day • Target: {targetDate}
+              </span>
+            </div>
+
+            <p className="text-xs text-slate-300 leading-relaxed">
+              {generatedDraft.feasibilitySummary}
+            </p>
+
+            <div className="text-[11px] bg-slate-950 p-3 rounded-xl border border-slate-800 space-y-1">
+              <span className="font-semibold text-slate-300">Underlying Model Assumptions:</span>
+              <ul className="list-disc list-inside text-slate-400 space-y-0.5">
+                {generatedDraft.assumptions.map((a, i) => (
+                  <li key={i}>{a}</li>
+                ))}
+              </ul>
+            </div>
+          </div>
+
+          {/* Goal & Milestone Roadmap Review */}
+          <div className="bg-slate-900/90 rounded-2xl border border-slate-800 p-6 shadow-xl space-y-6">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-800">
+              <div>
+                <span className="text-[10px] uppercase font-mono tracking-wider text-emerald-400">
+                  Draft Roadmap Review (Requires Your Approval)
+                </span>
+                <h3 className="text-xl font-bold text-white mt-1">
+                  {generatedDraft.title}
+                </h3>
+                <p className="text-xs text-slate-300 mt-0.5">
+                  Outcome: {generatedDraft.outcome}
+                </p>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setGeneratedDraft(null)}
+                  className="px-3 py-1.5 text-xs text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors"
+                >
+                  Discard & Re-prompt
+                </button>
+              </div>
+            </div>
+
+            {/* Milestones & Tasks list */}
+            <div className="space-y-6">
+              {generatedDraft.milestones.map((milestone, mIdx) => (
+                <div key={mIdx} className="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-3">
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="w-5 h-5 rounded-full bg-indigo-500/20 text-indigo-400 text-xs font-bold flex items-center justify-center">
+                          {mIdx + 1}
+                        </span>
+                        <h4 className="text-sm font-bold text-white">{milestone.title}</h4>
+                      </div>
+                      <p className="text-xs text-slate-400 mt-1 ml-7">{milestone.description}</p>
+                    </div>
+                    <span className="text-xs font-mono px-2 py-0.5 bg-slate-900 rounded text-slate-300 shrink-0">
+                      Due {milestone.dueDate}
+                    </span>
+                  </div>
+
+                  {/* Tasks under milestone */}
+                  <div className="ml-7 space-y-2 pt-1">
+                    {milestone.tasks.map((task, tIdx) => (
+                      <div
+                        key={tIdx}
+                        className="p-3 rounded-lg bg-slate-900 border border-slate-800 flex items-center justify-between gap-3 group"
+                      >
+                        <div className="flex items-start gap-3">
+                          <div className="w-2 h-2 rounded-full bg-indigo-400 mt-1.5 shrink-0" />
+                          <div>
+                            <p className="text-xs font-semibold text-slate-200">{task.title}</p>
+                            <p className="text-[11px] text-slate-400 mt-0.5">{task.description}</p>
+                            <div className="flex items-center gap-3 mt-1 text-[10px] text-slate-500">
+                              <span className="flex items-center gap-1 text-indigo-400 font-mono">
+                                <Clock className="w-3 h-3" /> {task.estimatedMinutes}m
+                              </span>
+                              <span>Due: {task.dueDate}</span>
+                              <span className="uppercase text-[9px] px-1 bg-slate-800 rounded font-semibold">
+                                {task.priority}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveDraftTask(mIdx, tIdx)}
+                          title="Remove task from draft"
+                          className="opacity-0 group-hover:opacity-100 p-1.5 rounded text-slate-500 hover:text-rose-400 hover:bg-slate-800 transition-all"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Approval Call to Action (PRD F-06 Acceptance Criteria: "No generated roadmap becomes active until user approval") */}
+            <div className="p-4 rounded-xl bg-gradient-to-r from-indigo-950/60 to-emerald-950/60 border border-emerald-500/40 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div>
+                <h4 className="text-sm font-bold text-white flex items-center gap-2">
+                  <ShieldCheck className="w-4 h-4 text-emerald-400" />
+                  Ready to activate this roadmap?
+                </h4>
+                <p className="text-xs text-slate-300 mt-0.5">
+                  Approving will commit Plan v1.0 to your dashboard and immediately schedule your first daily action item.
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={handleApproveRoadmap}
+                className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-indigo-600 hover:from-emerald-400 hover:to-indigo-500 text-white font-bold text-xs shadow-lg shadow-emerald-500/20 transition-all hover:scale-[1.02] shrink-0"
+              >
+                <Check className="w-4 h-4" />
+                Approve & Activate Roadmap
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
