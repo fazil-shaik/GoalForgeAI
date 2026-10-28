@@ -102,12 +102,33 @@ export const authOptions: NextAuthOptions = {
                 providerAccountId: account.providerAccountId,
                 refresh_token: account.refresh_token,
                 access_token: account.access_token,
-                expires_at: account.expires_at,
+                expires_at: account.expires_at
+                  ? Math.round(Number(account.expires_at))
+                  : null,
                 token_type: account.token_type,
                 scope: account.scope,
                 id_token: account.id_token,
                 session_state: (account as any).session_state,
               });
+            } else {
+              await db
+                .update(accounts)
+                .set({
+                  access_token:
+                    account.access_token || existingAccount[0].access_token,
+                  refresh_token:
+                    account.refresh_token || existingAccount[0].refresh_token,
+                  expires_at: account.expires_at
+                    ? Math.round(Number(account.expires_at))
+                    : existingAccount[0].expires_at,
+                  id_token: account.id_token || existingAccount[0].id_token,
+                })
+                .where(
+                  and(
+                    eq(accounts.provider, account.provider),
+                    eq(accounts.providerAccountId, account.providerAccountId)
+                  )
+                );
             }
           }
 
@@ -122,8 +143,29 @@ export const authOptions: NextAuthOptions = {
 
     async redirect({ url, baseUrl }) {
       // Guarantee redirect to /dashboard after Google authentication
-      if (url.startsWith("/")) return `${baseUrl}${url}`;
-      if (new URL(url).origin === baseUrl) return url;
+      if (
+        !url ||
+        url === baseUrl ||
+        url === `${baseUrl}/` ||
+        url === "/auth" ||
+        url.includes("/auth")
+      ) {
+        return `${baseUrl}/dashboard`;
+      }
+      if (url.startsWith("/")) {
+        return `${baseUrl}${url}`;
+      }
+      try {
+        const parsed = new URL(url);
+        if (parsed.origin === baseUrl) {
+          if (parsed.pathname === "/" || parsed.pathname === "/auth") {
+            return `${baseUrl}/dashboard`;
+          }
+          return url;
+        }
+      } catch {
+        // Fallback to dashboard
+      }
       return `${baseUrl}/dashboard`;
     },
     async jwt({ token, user, account, trigger, session }) {

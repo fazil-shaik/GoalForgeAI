@@ -40,7 +40,11 @@ function GoogleIcon() {
 function AuthContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const callbackUrl = searchParams.get("callbackUrl") || "/dashboard";
+  const rawCallbackUrl = searchParams.get("callbackUrl");
+  const callbackUrl =
+    rawCallbackUrl && !rawCallbackUrl.includes("/auth")
+      ? rawCallbackUrl
+      : "/dashboard";
 
   const { data: session, status } = useSession();
   const [isLoading, setIsLoading] = useState(false);
@@ -50,7 +54,7 @@ function AuthContent() {
   React.useEffect(() => {
     if (authError) {
       if (authError === "OAuthSignin") {
-        setErrorMsg("Google OAuth configuration error. Please verify GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET in .env.");
+        setErrorMsg("Google OAuth configuration error. Please verify Google Cloud Console configuration and network connectivity.");
       } else if (authError === "OAuthCallback") {
         setErrorMsg("Google redirect mismatch. Please ensure 'http://localhost:3000/api/auth/callback/google' is added under Authorized redirect URIs in Google Cloud Console.");
       } else if (authError === "AccessDenied") {
@@ -63,10 +67,10 @@ function AuthContent() {
 
   // If already authenticated via real Google session, redirect to dashboard
   React.useEffect(() => {
-    if (status === "authenticated") {
+    if (status === "authenticated" && session?.user) {
       router.replace(callbackUrl);
     }
-  }, [status, callbackUrl, router]);
+  }, [status, session, callbackUrl, router]);
 
   const handleGoogleSignIn = async () => {
     setIsLoading(true);
