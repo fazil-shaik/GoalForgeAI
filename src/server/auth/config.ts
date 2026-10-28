@@ -120,6 +120,12 @@ export const authOptions: NextAuthOptions = {
       return true;
     },
 
+    async redirect({ url, baseUrl }) {
+      // Guarantee redirect to /dashboard after Google authentication
+      if (url.startsWith("/")) return `${baseUrl}${url}`;
+      if (new URL(url).origin === baseUrl) return url;
+      return `${baseUrl}/dashboard`;
+    },
     async jwt({ token, user, account, trigger, session }) {
       if (user) {
         token.id = (user as any).dbId || user.id || token.sub;
