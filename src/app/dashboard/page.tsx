@@ -31,6 +31,7 @@ import {
 import { GoalBuilderFeature } from "@/components/dashboard/GoalBuilderFeature";
 import { DailyTaskFeature } from "@/components/dashboard/DailyTaskFeature";
 import { RecoveryModeFeature } from "@/components/dashboard/RecoveryModeFeature";
+import { AiCoachFeature } from "@/components/dashboard/AiCoachFeature";
 
 export type DashboardTab = "tasks" | "builder" | "recovery" | "coach";
 
@@ -365,18 +366,7 @@ export default function DashboardPage() {
           )}
 
           {activeTab === "coach" && (
-            <div id="feature-coach-root" className="bg-slate-900/40 rounded-2xl border border-slate-800 p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-lg font-bold text-white flex items-center gap-2">
-                  <Brain className="w-5 h-5 text-teal-400" />
-                  AI Goal Coach & Feasibility Insights
-                </h2>
-                <span className="text-xs text-slate-400 font-mono">Module Active</span>
-              </div>
-              <p className="text-sm text-slate-300">
-                Workload capacity calculations, risk analysis, and actionable coaching guidance.
-              </p>
-            </div>
+            <AiCoachFeature onNavigateToTasks={() => setActiveTab("tasks")} />
           )}
         </div>
       </main>
