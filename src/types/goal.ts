@@ -75,3 +75,45 @@ export interface CoachMessage {
   suggestedFollowup?: string;
   timestamp: string;
 }
+
+export interface StreakData {
+  currentStreak: number;
+  longestStreak: number;
+  isActiveToday: boolean;
+  isStreakAtRisk: boolean;
+  activeDaysThisWeek: string[];
+  totalTasksCompleted: number;
+  lastActivityDate: string | null;
+}
+
+export interface MedalItem {
+  key: string;
+  title: string;
+  description: string;
+  tier: "bronze" | "silver" | "gold" | "platinum" | "diamond";
+  iconType: string;
+  category: "hard_goal" | "streak" | "recovery" | "milestone" | "milestone_count";
+  isUnlocked: boolean;
+  unlockedAt: string | null;
+  goalId?: string | null;
+  metadata?: any;
+}
+
+export interface LeaderboardUserEntry {
+  rank: number;
+  userId: string;
+  name: string;
+  image: string | null;
+  category: string;
+  totalGoalsCompleted: number;
+  hardGoalsCompleted: number;
+  currentStreak: number;
+  medalsCount: number;
+  recentMedals: Array<{
+    key: string;
+    title: string;
+    tier: string;
+  }>;
+  forgeScore: number;
+  isCurrentUser: boolean;
+}

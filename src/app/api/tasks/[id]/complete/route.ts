@@ -14,11 +14,16 @@ export async function POST(
   const { id: taskId } = await params;
   const body = await req.json().catch(() => ({}));
 
-  const updatedTask = await TaskService.completeTask(
+  const result = await TaskService.completeTask(
     taskId,
     userId,
     body.actualMinutes
   );
 
-  return NextResponse.json({ success: true, task: updatedTask });
+  return NextResponse.json({
+    success: true,
+    task: result?.task || null,
+    streak: result?.streak || null,
+    newlyUnlockedMedals: result?.newlyUnlockedMedals || [],
+  });
 }

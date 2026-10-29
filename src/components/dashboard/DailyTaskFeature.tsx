@@ -21,7 +21,9 @@ import {
   X,
   FileText,
   Timer,
-  ArrowUpRight
+  ArrowUpRight,
+  Trophy,
+  Medal,
 } from "lucide-react";
 
 export function DailyTaskFeature({
@@ -35,6 +37,7 @@ export function DailyTaskFeature({
     milestones,
     tasks,
     completeTask,
+    completeGoal,
     skipTask,
     rescheduleTask,
     addTask,
@@ -201,6 +204,17 @@ export function DailyTaskFeature({
         </div>
 
         <div className="flex items-center gap-2">
+          {activeGoal && activeGoal.status !== "completed" && (
+            <button
+              type="button"
+              onClick={() => completeGoal(activeGoal.id)}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-500/10 border border-amber-500/30 hover:bg-amber-500/20 text-xs font-bold text-amber-300 transition-all cursor-pointer shadow-sm"
+              title="Finalize this goal and evaluate Hard Goal Medals"
+            >
+              <Trophy className="w-3.5 h-3.5 text-amber-400" /> Complete Goal
+            </button>
+          )}
+
           <button
             onClick={() => setShowQuickAdd(!showQuickAdd)}
             className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-900 border border-slate-700 hover:border-indigo-500 text-xs font-semibold text-slate-200 transition-colors"

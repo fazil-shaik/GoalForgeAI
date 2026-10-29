@@ -338,13 +338,58 @@ export const coachMessages = pgTable("coach_messages", {
   timestamp: timestamp("timestamp", { mode: "date" }).defaultNow().notNull(),
 });
 
-export const usersRelations = relations(users, ({ many }) => ({
+// 17. User Streaks (Daily Execution Streak Engine)
+export const userStreaks = pgTable("user_streaks", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  userId: uuid("user_id")
+    .notNull()
+    .unique()
+    .references(() => users.id, { onDelete: "cascade" }),
+  currentStreak: integer("current_streak").default(0).notNull(),
+  longestStreak: integer("longest_streak").default(0).notNull(),
+  lastActivityDate: text("last_activity_date"), // YYYY-MM-DD
+  totalTasksCompleted: integer("total_tasks_completed").default(0).notNull(),
+  updatedAt: timestamp("updated_at", { mode: "date" }).defaultNow().notNull(),
+});
+
+// 18. User Medals (Hard Goals & Milestones Achievements)
+export const userMedals = pgTable("user_medals", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  userId: uuid("user_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  goalId: uuid("goal_id").references(() => goals.id, { onDelete: "set null" }),
+  medalKey: text("medal_key").notNull(), // 'titan_conqueror' | 'phoenix_resurgence' | 'summit_master' | 'iron_streak' | 'centurion' | 'first_blood'
+  title: text("title").notNull(),
+  description: text("description").notNull(),
+  tier: text("tier", {
+    enum: ["bronze", "silver", "gold", "platinum", "diamond"],
+  })
+    .default("gold")
+    .notNull(),
+  iconType: text("icon_type").default("trophy").notNull(),
+  metadataJson: jsonb("metadata_json").default({}),
+  unlockedAt: timestamp("unlocked_at", { mode: "date" }).defaultNow().notNull(),
+});
+
+export const usersRelations = relations(users, ({ one, many }) => ({
   goals: many(goals),
   accounts: many(accounts),
   sessions: many(sessions),
   taskEvents: many(taskEvents),
   notifications: many(notifications),
   coachMessages: many(coachMessages),
+  streak: one(userStreaks, { fields: [users.id], references: [userStreaks.userId] }),
+  medals: many(userMedals),
+}));
+
+export const userStreaksRelations = relations(userStreaks, ({ one }) => ({
+  user: one(users, { fields: [userStreaks.userId], references: [users.id] }),
+}));
+
+export const userMedalsRelations = relations(userMedals, ({ one }) => ({
+  user: one(users, { fields: [userMedals.userId], references: [users.id] }),
+  goal: one(goals, { fields: [userMedals.goalId], references: [goals.id] }),
 }));
 
 export const goalsRelations = relations(goals, ({ one, many }) => ({
@@ -356,6 +401,7 @@ export const goalsRelations = relations(goals, ({ one, many }) => ({
   weeklyReviews: many(weeklyReviews),
   constraints: many(goalConstraints),
   coachMessages: many(coachMessages),
+  medals: many(userMedals),
 }));
 
 export const milestonesRelations = relations(milestones, ({ one, many }) => ({

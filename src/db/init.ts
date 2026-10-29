@@ -162,10 +162,164 @@ export async function initDatabase() {
       );
     `;
 
+    await sql`
+      CREATE TABLE IF NOT EXISTS user_streaks (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        user_id UUID NOT NULL UNIQUE REFERENCES users(id) ON DELETE CASCADE,
+        current_streak INTEGER DEFAULT 0 NOT NULL,
+        longest_streak INTEGER DEFAULT 0 NOT NULL,
+        last_activity_date TEXT,
+        total_tasks_completed INTEGER DEFAULT 0 NOT NULL,
+        updated_at TIMESTAMP DEFAULT NOW() NOT NULL
+      );
+    `;
+
+    await sql`
+      CREATE TABLE IF NOT EXISTS user_medals (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        goal_id UUID REFERENCES goals(id) ON DELETE SET NULL,
+        medal_key TEXT NOT NULL,
+        title TEXT NOT NULL,
+        description TEXT NOT NULL,
+        tier TEXT DEFAULT 'gold' NOT NULL,
+        icon_type TEXT DEFAULT 'trophy' NOT NULL,
+        metadata_json JSONB DEFAULT '{}'::jsonb,
+        unlocked_at TIMESTAMP DEFAULT NOW() NOT NULL
+      );
+    `;
+
+    // Ensure community leaderboard cohort exists in Neon DB
+    await seedCommunityLeaderboard(sql);
+
     console.log("✅ [DB Init] All PRD tables successfully verified & active in Neon PostgreSQL!");
     return true;
   } catch (err) {
     console.error("❌ [DB Init] Error verifying tables in database:", err);
     return false;
+  }
+}
+
+/**
+ * Seed realistic community leaderboard performers into Neon PostgreSQL
+ * so users can compete against active GoalForge masters dynamically.
+ */
+async function seedCommunityLeaderboard(sql: any) {
+  try {
+    const existingUsers = await sql`SELECT count(*)::int as count FROM users`;
+    if (existingUsers[0]?.count >= 4) {
+      return; // Already populated
+    }
+
+    console.log("[DB Init] Seeding community leaderboard champions in Neon DB...");
+
+    const cohort = [
+      {
+        name: "Elena Rostova",
+        email: "elena.rostova@cloudforge.io",
+        image: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
+        category: "Cloud Architecture & High-Scale Systems",
+        completedGoals: 7,
+        hardGoals: 5,
+        streak: 21,
+        medals: [
+          { key: "titan_conqueror", title: "Titan Goal Conqueror", desc: "Completed 5 High-Risk Complex Engineering Goals", tier: "platinum" },
+          { key: "iron_streak", title: "Iron Discipline Medal", desc: "Maintained a 21-day execution streak", tier: "diamond" },
+          { key: "summit_master", title: "Summit Master", desc: "Reached the apex of 6 ambitious roadmaps", tier: "gold" },
+        ]
+      },
+      {
+        name: "Marcus Chen",
+        email: "marcus.chen@ai-nexus.dev",
+        image: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80",
+        category: "Machine Learning & Distributed LLMs",
+        completedGoals: 6,
+        hardGoals: 4,
+        streak: 15,
+        medals: [
+          { key: "titan_conqueror", title: "Titan Goal Conqueror", desc: "Finished High-Risk Transformer Scaling Goal", tier: "platinum" },
+          { key: "phoenix_resurgence", title: "Phoenix Resurgence", desc: "Recovered from 4 overdue sprint blockers", tier: "gold" },
+        ]
+      },
+      {
+        name: "Sarah Jenkins",
+        email: "sarah.j@endurance-iron.org",
+        image: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&auto=format&fit=crop&q=80",
+        category: "Ultra-Marathon & Peak Biohacking",
+        completedGoals: 5,
+        hardGoals: 3,
+        streak: 34,
+        medals: [
+          { key: "iron_streak", title: "Iron Discipline Medal", desc: "30+ consecutive days of morning roadwork", tier: "diamond" },
+          { key: "centurion", title: "Centurion Finisher", desc: "Completed 50+ grueling physical preparation tasks", tier: "gold" },
+        ]
+      },
+      {
+        name: "Alex Rivera",
+        email: "alex.rivera@microforge.co",
+        image: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&auto=format&fit=crop&q=80",
+        category: "Fullstack SaaS & Micro-Ventures",
+        completedGoals: 4,
+        hardGoals: 2,
+        streak: 9,
+        medals: [
+          { key: "first_blood", title: "First Blood Medal", desc: "First production SaaS launch in 30 days", tier: "silver" },
+          { key: "summit_master", title: "Summit Master", desc: "Completed MVP to First 100 Paying Users roadmap", tier: "gold" },
+        ]
+      }
+    ];
+
+    for (const champion of cohort) {
+      const inserted = await sql`
+        INSERT INTO users (name, email, image, preferences)
+        VALUES (
+          ${champion.name},
+          ${champion.email},
+          ${champion.image},
+          ${JSON.stringify({ primaryCategory: champion.category, coachingStyle: "analytical", availableMinutesPerDay: 60 })}::jsonb
+        )
+        ON CONFLICT (email) DO NOTHING
+        RETURNING id;
+      `;
+
+      const champUserId = inserted[0]?.id;
+      if (!champUserId) continue;
+
+      // Seed user streak
+      await sql`
+        INSERT INTO user_streaks (user_id, current_streak, longest_streak, total_tasks_completed, last_activity_date)
+        VALUES (${champUserId}, ${champion.streak}, ${champion.streak + 5}, ${champion.completedGoals * 8}, CURRENT_DATE::text)
+        ON CONFLICT (user_id) DO NOTHING;
+      `;
+
+      // Seed completed goals
+      for (let i = 0; i < champion.completedGoals; i++) {
+        const isHard = i < champion.hardGoals;
+        await sql`
+          INSERT INTO goals (user_id, title, outcome, category, target_date, status, feasibility_risk)
+          VALUES (
+            ${champUserId},
+            ${`${champion.category.split("&")[0].trim()} Milestone Challenge #${i + 1}`},
+            ${`Successfully achieve outcome for tier ${i + 1}`},
+            ${champion.category},
+            '2026-10-15',
+            'completed',
+            ${isHard ? "high_risk" : "moderate_risk"}
+          );
+        `;
+      }
+
+      // Seed medals
+      for (const m of champion.medals) {
+        await sql`
+          INSERT INTO user_medals (user_id, medal_key, title, description, tier, icon_type)
+          VALUES (${champUserId}, ${m.key}, ${m.title}, ${m.desc}, ${m.tier}, 'trophy');
+        `;
+      }
+    }
+
+    console.log("✅ [DB Init] Community leaderboard champions successfully seeded!");
+  } catch (err) {
+    console.warn("[DB Init] Notice seeding community users (non-fatal):", err);
   }
 }

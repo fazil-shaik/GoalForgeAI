@@ -21,6 +21,8 @@ import {
   ShieldCheck,
   Plus,
   Flame,
+  Trophy,
+  Medal,
   ArrowRight,
   TrendingUp,
   Layers,
@@ -34,14 +36,17 @@ import { GoalBuilderFeature } from "@/components/dashboard/GoalBuilderFeature";
 import { DailyTaskFeature } from "@/components/dashboard/DailyTaskFeature";
 import { RecoveryModeFeature } from "@/components/dashboard/RecoveryModeFeature";
 import { AiCoachFeature } from "@/components/dashboard/AiCoachFeature";
+import { LeaderboardFeature } from "@/components/dashboard/LeaderboardFeature";
+import { MedalCelebrationModal } from "@/components/dashboard/MedalCelebrationModal";
 import {
   DailyTasksLogo,
   RoadmapBuilderLogo,
   RecoveryModeLogo,
   AiCoachLogo,
+  LeaderboardLogo,
 } from "@/components/dashboard/NavLogos";
 
-export type DashboardTab = "tasks" | "builder" | "recovery" | "coach";
+export type DashboardTab = "tasks" | "builder" | "recovery" | "coach" | "arena";
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -53,6 +58,8 @@ export default function DashboardPage() {
     milestones,
     tasks,
     recoveryProposal,
+    streak,
+    unlockedMedalsCount,
     isLoading: isGoalLoading,
     setActiveGoalId,
   } = useGoal();
@@ -217,6 +224,33 @@ export default function DashboardPage() {
                 <span>{overdueTasks.length} Overdue • Goal Recovery Ready</span>
               </button>
             )}
+
+            {/* Daily Streak Counter Pill */}
+            <button
+              type="button"
+              onClick={() => setActiveTab("arena")}
+              className={`flex items-center gap-2 px-3 py-1.5 rounded-full border transition-all cursor-pointer backdrop-blur-md ${
+                streak?.isActiveToday
+                  ? "bg-amber-500/15 border-amber-500/40 text-amber-300 shadow-[0_0_15px_rgba(245,158,11,0.25)] hover:bg-amber-500/25"
+                  : streak?.isStreakAtRisk
+                  ? "bg-orange-500/20 border-orange-500/50 text-orange-300 animate-pulse hover:bg-orange-500/30"
+                  : "bg-slate-800/80 border-white/10 text-slate-300 hover:bg-slate-800"
+              }`}
+              title="Daily Execution Streak • Click to open Championship Arena"
+            >
+              <Flame className="w-4 h-4 text-amber-400 animate-bounce" />
+              <div className="flex items-center gap-1.5">
+                <span className="text-xs font-black font-mono">
+                  {streak?.currentStreak || 0}
+                </span>
+                <span className="text-[10px] text-slate-400 font-mono hidden sm:inline">
+                  {streak?.currentStreak === 1 ? "day streak" : "days streak"}
+                </span>
+              </div>
+              {streak?.isActiveToday && (
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+              )}
+            </button>
 
             {/* User Profile Menu */}
             <div className="relative">
@@ -422,6 +456,46 @@ export default function DashboardPage() {
                   <span className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-2 h-1 rounded-full bg-teal-400 shadow-sm shadow-teal-400" />
                 )}
               </div>
+
+              {/* 5. Arena: Leaderboard & Medals Logo Tab */}
+              <div className="relative group">
+                <button
+                  type="button"
+                  role="tab"
+                  aria-selected={activeTab === "arena"}
+                  aria-label="Leaderboard, Medals and Daily Streaks Arena"
+                  onClick={() => setActiveTab("arena")}
+                  className={`liquid-glass-item relative flex items-center justify-center w-14 h-14 sm:w-16 sm:h-16 p-1.5 rounded-2xl cursor-pointer transition-all duration-300 ${activeTab === "arena" ? "liquid-glass-item-active-arena scale-105 shadow-[0_0_20px_rgba(234,179,8,0.5)]" : ""
+                    }`}
+                >
+                  <LeaderboardLogo className="w-full h-full" isActive={activeTab === "arena"} />
+
+                  {/* Medal count badge */}
+                  {unlockedMedalsCount > 0 && (
+                    <span className="absolute -top-1 -right-1 px-1.5 py-0.5 rounded-full bg-amber-400 text-slate-950 text-[10px] font-black font-mono shadow-lg shadow-amber-400/50 border-2 border-slate-950 z-20">
+                      {unlockedMedalsCount}
+                    </span>
+                  )}
+                </button>
+
+                {/* Micro-Tooltip with context */}
+                <div className="absolute left-1/2 -translate-x-1/2 top-full mt-3 z-50 pointer-events-none opacity-0 group-hover:opacity-100 translate-y-1 group-hover:translate-y-0 transition-all duration-200">
+                  <div className="px-3.5 py-1.5 rounded-xl bg-slate-900/95 border border-white/10 shadow-2xl text-center whitespace-nowrap backdrop-blur-xl">
+                    <p className="text-xs font-bold text-white flex items-center gap-1.5 justify-center">
+                      <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
+                      Leaderboard & Medals
+                    </p>
+                    <p className="text-[10px] text-amber-300/90 font-mono">
+                      Daily streak, Hard Goal medals & global ranks
+                    </p>
+                  </div>
+                </div>
+
+                {/* Active indicator dot beneath */}
+                {activeTab === "arena" && (
+                  <span className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-2 h-1 rounded-full bg-amber-400 shadow-sm shadow-amber-400" />
+                )}
+              </div>
             </nav>
           </div>
         </div>
@@ -521,8 +595,15 @@ export default function DashboardPage() {
           {activeTab === "coach" && (
             <AiCoachFeature onNavigateToTasks={() => setActiveTab("tasks")} />
           )}
+
+          {activeTab === "arena" && (
+            <LeaderboardFeature />
+          )}
         </div>
       </main>
+
+      {/* Global Medal Unlock Celebration Modal */}
+      <MedalCelebrationModal />
     </div>
   );
 }

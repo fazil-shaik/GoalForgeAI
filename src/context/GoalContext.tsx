@@ -8,6 +8,8 @@ import {
   RecoveryProposal,
   CoachMessage,
   TaskStatus,
+  StreakData,
+  MedalItem,
 } from "@/types/goal";
 import confetti from "canvas-confetti";
 
@@ -19,6 +21,16 @@ interface GoalContextType {
   recoveryProposal: RecoveryProposal | null;
   coachMessages: CoachMessage[];
   isLoading: boolean;
+  // Streak & Medals Engine
+  streak: StreakData | null;
+  medals: MedalItem[];
+  unlockedMedalsCount: number;
+  hardGoalsCompletedCount: number;
+  unlockedCelebrationModal: MedalItem | null;
+  setUnlockedCelebrationModal: (m: MedalItem | null) => void;
+  completeGoal: (goalId: string) => Promise<{ success: boolean; isHardGoal: boolean; newlyUnlockedMedals: any[] }>;
+  refreshStreak: () => Promise<void>;
+  refreshMedals: () => Promise<void>;
   setActiveGoalId: (id: string) => void;
   refreshData: () => Promise<void>;
   // Feature 1: Goal Builder & Roadmap Approval
@@ -52,6 +64,41 @@ export function GoalProvider({ children }: { children: React.ReactNode }) {
   const [recoveryProposal, setRecoveryProposal] = useState<RecoveryProposal | null>(null);
   const [coachMessages, setCoachMessages] = useState<CoachMessage[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
+
+  // Gamification: Streak & Medals State
+  const [streak, setStreak] = useState<StreakData | null>(null);
+  const [medals, setMedals] = useState<MedalItem[]>([]);
+  const [unlockedMedalsCount, setUnlockedMedalsCount] = useState<number>(0);
+  const [hardGoalsCompletedCount, setHardGoalsCompletedCount] = useState<number>(0);
+  const [unlockedCelebrationModal, setUnlockedCelebrationModal] = useState<MedalItem | null>(null);
+
+  const refreshStreak = useCallback(async () => {
+    try {
+      const res = await fetch("/api/user/streak");
+      if (res.ok) {
+        const data = await res.json();
+        if (data.streak) setStreak(data.streak);
+      }
+    } catch (err) {
+      console.warn("Notice loading streak (non-fatal):", err);
+    }
+  }, []);
+
+  const refreshMedals = useCallback(async () => {
+    try {
+      const res = await fetch("/api/user/medals");
+      if (res.ok) {
+        const data = await res.json();
+        if (data.medals) {
+          setMedals(data.medals);
+          setUnlockedMedalsCount(data.unlockedCount || 0);
+          setHardGoalsCompletedCount(data.hardGoalsCount || 0);
+        }
+      }
+    } catch (err) {
+      console.warn("Notice loading medals (non-fatal):", err);
+    }
+  }, []);
 
   // Helper to fetch full graph for a goal
   const fetchGoalDetails = useCallback(async (goalId: string) => {
@@ -116,7 +163,9 @@ export function GoalProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     loadGoals();
-  }, [loadGoals]);
+    refreshStreak();
+    refreshMedals();
+  }, [loadGoals, refreshStreak, refreshMedals]);
 
   const activeGoal = goals.find((g) => g.id === activeGoalId) || goals[0] || null;
 
@@ -131,6 +180,8 @@ export function GoalProvider({ children }: { children: React.ReactNode }) {
     } else {
       await loadGoals();
     }
+    await refreshStreak();
+    await refreshMedals();
   };
 
   // Feature 1: Create Goal with Roadmap in Neon DB
@@ -215,13 +266,81 @@ export function GoalProvider({ children }: { children: React.ReactNode }) {
 
     // 2. Persist to Neon DB
     try {
-      await fetch(`/api/tasks/${taskId}/complete`, {
+      const res = await fetch(`/api/tasks/${taskId}/complete`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ actualMinutes }),
       });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.streak) setStreak(data.streak);
+        if (data.newlyUnlockedMedals && data.newlyUnlockedMedals.length > 0) {
+          const firstNew = data.newlyUnlockedMedals[0];
+          setUnlockedCelebrationModal({
+            key: firstNew.medalKey,
+            title: firstNew.title,
+            description: firstNew.description,
+            tier: firstNew.tier,
+            iconType: firstNew.iconType || "trophy",
+            category: "streak",
+            isUnlocked: true,
+            unlockedAt: firstNew.unlockedAt || new Date().toISOString(),
+          });
+          refreshMedals();
+        }
+      }
     } catch (err) {
       console.error("Error completing task in Neon DB:", err);
+    }
+  };
+
+  // Complete Goal & Evaluate Hard Goal Medals
+  const completeGoal = async (goalId: string) => {
+    try {
+      const res = await fetch(`/api/goals/${goalId}/complete`, {
+        method: "POST",
+      });
+      if (!res.ok) throw new Error("Failed to complete goal");
+      const data = await res.json();
+
+      // Confetti celebration
+      try {
+        confetti({
+          particleCount: 120,
+          spread: 80,
+          origin: { y: 0.6 },
+        });
+      } catch {
+        // safe
+      }
+
+      await loadGoals();
+      await refreshMedals();
+      await refreshStreak();
+
+      if (data.newlyUnlockedMedals && data.newlyUnlockedMedals.length > 0) {
+        const firstMedal = data.newlyUnlockedMedals[0];
+        setUnlockedCelebrationModal({
+          key: firstMedal.medalKey,
+          title: firstMedal.title,
+          description: firstMedal.description,
+          tier: firstMedal.tier,
+          iconType: firstMedal.iconType || "trophy",
+          category: "hard_goal",
+          isUnlocked: true,
+          unlockedAt: firstMedal.unlockedAt || new Date().toISOString(),
+          metadata: firstMedal.metadataJson,
+        });
+      }
+
+      return {
+        success: true,
+        isHardGoal: data.isHardGoal || false,
+        newlyUnlockedMedals: data.newlyUnlockedMedals || [],
+      };
+    } catch (err) {
+      console.error("Error completing goal in Neon DB:", err);
+      return { success: false, isHardGoal: false, newlyUnlockedMedals: [] };
     }
   };
 
@@ -461,6 +580,15 @@ export function GoalProvider({ children }: { children: React.ReactNode }) {
         recoveryProposal,
         coachMessages,
         isLoading,
+        streak,
+        medals,
+        unlockedMedalsCount,
+        hardGoalsCompletedCount,
+        unlockedCelebrationModal,
+        setUnlockedCelebrationModal,
+        completeGoal,
+        refreshStreak,
+        refreshMedals,
         setActiveGoalId,
         refreshData,
         createGoalWithRoadmap,
