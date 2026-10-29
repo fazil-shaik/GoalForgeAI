@@ -1,13 +1,18 @@
 import { GoalRepository } from "@/server/repositories/goal.repository";
-import { goals, milestones, tasks } from "@/db/schema";
 
 export class GoalService {
   static async getUserGoals(userId: string) {
-    return GoalRepository.listByUserId(userId);
+    let list = await GoalRepository.listByUserId(userId);
+    if (list.length === 0) {
+      // Auto-seed initial demo goal so the user immediately has real interactive records in Neon DB
+      await GoalRepository.seedInitialGoalIfEmpty(userId);
+      list = await GoalRepository.listByUserId(userId);
+    }
+    return list;
   }
 
   static async getGoalDetails(goalId: string) {
-    return GoalRepository.getById(goalId);
+    return GoalRepository.getFullGoalGraph(goalId);
   }
 
   static async createGoalWithRoadmap(
@@ -23,6 +28,7 @@ export class GoalService {
       feasibilityRisk: "low_risk" | "moderate_risk" | "high_risk";
     },
     milestonesInput: Array<{
+      tempId?: string;
       title: string;
       description?: string;
       dueDate: string;
@@ -30,6 +36,8 @@ export class GoalService {
       order: number;
     }>,
     tasksInput: Array<{
+      milestoneTempId?: string;
+      milestoneIndex?: number;
       title: string;
       description?: string;
       estimateMinutes: number;
@@ -43,8 +51,8 @@ export class GoalService {
         ...goalInput,
         userId,
       },
-      milestonesInput.map((m) => ({ ...m, status: "pending" as const })),
-      tasksInput.map((t) => ({ ...t, status: "todo" as const }))
+      milestonesInput,
+      tasksInput
     );
   }
 
@@ -54,5 +62,9 @@ export class GoalService {
 
   static async resumeGoal(goalId: string) {
     return GoalRepository.updateStatus(goalId, "active");
+  }
+
+  static async deleteGoal(goalId: string) {
+    return GoalRepository.deleteGoal(goalId);
   }
 }

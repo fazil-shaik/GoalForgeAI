@@ -324,12 +324,27 @@ export const evidence = pgTable("evidence", {
   createdAt: timestamp("created_at", { mode: "date" }).defaultNow().notNull(),
 });
 
+// 16. Coach Messages (AI Coach Conversation History)
+export const coachMessages = pgTable("coach_messages", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  userId: uuid("user_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  goalId: uuid("goal_id").references(() => goals.id, { onDelete: "cascade" }),
+  sender: text("sender").notNull(), // 'user' | 'coach'
+  text: text("text").notNull(),
+  recommendedNextAction: text("recommended_next_action"),
+  reason: text("reason"),
+  timestamp: timestamp("timestamp", { mode: "date" }).defaultNow().notNull(),
+});
+
 export const usersRelations = relations(users, ({ many }) => ({
   goals: many(goals),
   accounts: many(accounts),
   sessions: many(sessions),
   taskEvents: many(taskEvents),
   notifications: many(notifications),
+  coachMessages: many(coachMessages),
 }));
 
 export const goalsRelations = relations(goals, ({ one, many }) => ({
@@ -340,6 +355,7 @@ export const goalsRelations = relations(goals, ({ one, many }) => ({
   planProposals: many(planProposals),
   weeklyReviews: many(weeklyReviews),
   constraints: many(goalConstraints),
+  coachMessages: many(coachMessages),
 }));
 
 export const milestonesRelations = relations(milestones, ({ one, many }) => ({

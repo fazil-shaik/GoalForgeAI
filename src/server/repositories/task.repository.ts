@@ -6,7 +6,18 @@ export class TaskRepository {
   static async listByGoalId(goalId: string) {
     const db = getDb();
     if (!db) return [];
-    return db.select().from(tasks).where(eq(tasks.goalId, goalId)).orderBy(tasks.dueAt);
+    return db
+      .select()
+      .from(tasks)
+      .where(eq(tasks.goalId, goalId))
+      .orderBy(tasks.dueAt);
+  }
+
+  static async getById(taskId: string) {
+    const db = getDb();
+    if (!db) return null;
+    const res = await db.select().from(tasks).where(eq(tasks.id, taskId)).limit(1);
+    return res[0] || null;
   }
 
   static async getTodayTasks(goalId: string, todayDate: string) {
@@ -34,8 +45,7 @@ export class TaskRepository {
 
     const updatedTask = res[0] || null;
 
-    if (updatedTask) {
-      // Append audit event (PRD F-08 / taskEvents)
+    if (updatedTask && userId) {
       await db.insert(taskEvents).values({
         taskId,
         userId,
@@ -63,7 +73,7 @@ export class TaskRepository {
 
     const updatedTask = res[0] || null;
 
-    if (updatedTask) {
+    if (updatedTask && userId) {
       await db.insert(taskEvents).values({
         taskId,
         userId,
@@ -91,7 +101,7 @@ export class TaskRepository {
 
     const updatedTask = res[0] || null;
 
-    if (updatedTask) {
+    if (updatedTask && userId) {
       await db.insert(taskEvents).values({
         taskId,
         userId,
@@ -108,5 +118,12 @@ export class TaskRepository {
     if (!db) return null;
     const res = await db.insert(tasks).values(taskData).returning();
     return res[0] || null;
+  }
+
+  static async deleteTask(taskId: string) {
+    const db = getDb();
+    if (!db) return false;
+    await db.delete(tasks).where(eq(tasks.id, taskId));
+    return true;
   }
 }

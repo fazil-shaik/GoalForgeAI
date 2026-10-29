@@ -149,6 +149,19 @@ export async function initDatabase() {
       );
     `;
 
+    await sql`
+      CREATE TABLE IF NOT EXISTS coach_messages (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        goal_id UUID REFERENCES goals(id) ON DELETE CASCADE,
+        sender TEXT NOT NULL,
+        text TEXT NOT NULL,
+        recommended_next_action TEXT,
+        reason TEXT,
+        timestamp TIMESTAMP DEFAULT NOW() NOT NULL
+      );
+    `;
+
     console.log("✅ [DB Init] All PRD tables successfully verified & active in Neon PostgreSQL!");
     return true;
   } catch (err) {

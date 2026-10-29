@@ -40,18 +40,23 @@ export function RecoveryModeFeature({
   const [customReason, setCustomReason] = useState<string>("");
   const [isGenerating, setIsGenerating] = useState(false);
 
-  // Compute overdue tasks for active goal
+  const todayDate = new Date().toISOString().split("T")[0];
+
+  // Compute overdue tasks for active goal dynamically
   const goalTasks = tasks.filter((t) => t.goalId === activeGoal?.id);
-  const overdueTasks = goalTasks.filter((t) => t.status === "todo" && t.dueDate < "2026-10-28");
+  const overdueTasks = goalTasks.filter((t) => t.status === "todo" && t.dueDate < todayDate);
   const overdueMinutes = overdueTasks.reduce((sum, t) => sum + t.estimatedMinutes, 0);
 
-  const handleGenerate = () => {
+  const handleGenerate = async () => {
     setIsGenerating(true);
     const reason = customReason.trim() || selectedReason;
-    setTimeout(() => {
-      generateRecoveryPlan(reason);
+    try {
+      await generateRecoveryPlan(reason);
+    } catch (err) {
+      console.error("Error generating recovery proposal:", err);
+    } finally {
       setIsGenerating(false);
-    }, 1000);
+    }
   };
 
   const isAccepted = recoveryProposal?.status === "accepted";

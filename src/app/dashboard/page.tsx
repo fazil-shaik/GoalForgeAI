@@ -47,6 +47,7 @@ export default function DashboardPage() {
     milestones,
     tasks,
     recoveryProposal,
+    isLoading: isGoalLoading,
     setActiveGoalId,
   } = useGoal();
 
@@ -94,19 +95,42 @@ export default function DashboardPage() {
     });
   };
 
-  // Filter tasks for active goal
+  const todayDate = new Date().toISOString().split("T")[0];
+
+  // Filter tasks for active goal dynamically
   const goalTasks = tasks.filter((t) => t.goalId === activeGoal?.id);
   const completedTasks = goalTasks.filter((t) => t.status === "completed");
-  const overdueTasks = goalTasks.filter((t) => t.status === "todo" && t.dueDate < "2026-10-28");
-  const todayTasks = goalTasks.filter((t) => t.dueDate === "2026-10-28" && t.status === "todo");
+  const overdueTasks = goalTasks.filter((t) => t.status === "todo" && t.dueDate < todayDate);
+  const todayTasks = goalTasks.filter((t) => t.dueDate === todayDate && t.status === "todo");
 
   // Metrics calculation (PRD F-07 & F-09)
   const totalPlannedMinutesToday = todayTasks.reduce((sum, t) => sum + t.estimatedMinutes, 0);
-  const userDailyCapacity = user?.preferences?.availableMinutesPerDay || 45;
+  const userDailyCapacity = currentUser.preferences.availableMinutesPerDay || 45;
   const capacityPercent = Math.min(Math.round((totalPlannedMinutesToday / userDailyCapacity) * 100), 100);
   const completionPercent = goalTasks.length > 0 ? Math.round((completedTasks.length / goalTasks.length) * 100) : 0;
 
   const hasPendingRecovery = overdueTasks.length > 0 || (recoveryProposal && recoveryProposal.status === "pending");
+
+  const riskLabel =
+    activeGoal?.feasibilityRisk === "low_risk"
+      ? "Low Risk"
+      : activeGoal?.feasibilityRisk === "high_risk"
+      ? "High Risk"
+      : "Moderate Risk";
+
+  const riskColor =
+    activeGoal?.feasibilityRisk === "low_risk"
+      ? "text-emerald-300"
+      : activeGoal?.feasibilityRisk === "high_risk"
+      ? "text-rose-300"
+      : "text-amber-300";
+
+  const riskPingColor =
+    activeGoal?.feasibilityRisk === "low_risk"
+      ? "bg-emerald-400"
+      : activeGoal?.feasibilityRisk === "high_risk"
+      ? "bg-rose-500"
+      : "bg-amber-400";
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col selection:bg-indigo-500 selection:text-white">
@@ -367,10 +391,16 @@ export default function DashboardPage() {
                 <div className="bg-slate-950 p-3 rounded-xl border border-slate-800/80 min-w-[120px] col-span-2 sm:col-span-1">
                   <span className="text-[10px] text-slate-400 uppercase tracking-wider block">Feasibility</span>
                   <div className="flex items-center gap-1.5 mt-1">
-                    <span className="w-2 h-2 rounded-full bg-amber-400 animate-ping" />
-                    <span className="text-xs font-bold text-amber-300">Moderate Risk</span>
+                    <span className={`w-2 h-2 rounded-full ${riskPingColor} animate-ping`} />
+                    <span className={`text-xs font-bold ${riskColor}`}>{riskLabel}</span>
                   </div>
-                  <span className="text-[10px] text-slate-400 block mt-1">45m buffer included</span>
+                  <span className="text-[10px] text-slate-400 block mt-1">
+                    {activeGoal?.feasibilityRisk === "low_risk"
+                      ? "Healthy pace"
+                      : activeGoal?.feasibilityRisk === "high_risk"
+                      ? "High pace risk"
+                      : "Paced with buffers"}
+                  </span>
                 </div>
               </div>
             </div>

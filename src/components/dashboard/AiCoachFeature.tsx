@@ -56,7 +56,7 @@ export function AiCoachFeature({
       ? "moderate_risk"
       : "low_risk";
 
-  const handleSend = (e?: React.FormEvent) => {
+  const handleSend = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     if (!inputQuestion.trim() || isThinking) return;
 
@@ -64,10 +64,13 @@ export function AiCoachFeature({
     setInputQuestion("");
     setIsThinking(true);
 
-    setTimeout(() => {
-      sendCoachMessage(question);
+    try {
+      await sendCoachMessage(question);
+    } catch (err) {
+      console.error("Error sending message to coach:", err);
+    } finally {
       setIsThinking(false);
-    }, 700);
+    }
   };
 
   const handleQuickPrompt = (prompt: string) => {

@@ -28,17 +28,23 @@ export class TaskService {
     estimateMinutes: number,
     dueAt: string,
     priority: "high" | "normal" | "low",
-    completionCriteria?: string
+    completionCriteria?: string,
+    description?: string
   ) {
     return TaskRepository.createTask({
       goalId,
       milestoneId,
       title,
+      description: description || "Added directly from execution hub",
       estimateMinutes,
       dueAt,
       priority,
       status: "todo",
       completionCriteria,
     });
+  }
+
+  static async deleteTask(taskId: string) {
+    return TaskRepository.deleteTask(taskId);
   }
 }

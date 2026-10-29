@@ -81,6 +81,7 @@ export function GoalBuilderFeature({ onGoalActivated }: { onGoalActivated?: () =
 
   // Generation & Review State
   const [isGenerating, setIsGenerating] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
   const [generatedDraft, setGeneratedDraft] = useState<{
     title: string;
     outcome: string;
@@ -102,116 +103,45 @@ export function GoalBuilderFeature({ onGoalActivated }: { onGoalActivated?: () =
     setTargetDate(date.toISOString().split("T")[0]);
   };
 
-  // Simulate AI Roadmap Generation according to PRD Prompt A, B, & C
-  const handleGenerateRoadmap = () => {
+  // Real Gemini AI Roadmap Generation (PRD Prompt A, B, & C)
+  const handleGenerateRoadmap = async () => {
     if (!ambition.trim()) return;
 
     setIsGenerating(true);
+    setErrorMessage("");
 
-    setTimeout(() => {
-      // Synthesize realistic structured goal & milestones based on input
-      const title = ambition.length > 40 ? ambition.slice(0, 38) + "..." : ambition;
-      const isTech = category.includes("Software") || category.includes("Tech") || ambition.toLowerCase().includes("code");
+    try {
+      const res = await fetch("/api/ai/generate-roadmap", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ambition: ambition.trim(),
+          category,
+          baseline,
+          targetDate,
+          dailyMinutes,
+          constraints,
+          coachingStyle: user?.preferences?.coachingStyle || "compassionate",
+        }),
+      });
 
-      const draft = {
-        title: isTech ? "Master Modern Backend & Distributed Architecture" : `Goal: ${title}`,
-        outcome: `Achieve verified proficiency and complete tangible deliverables in ${category}`,
-        targetMetric: isTech ? "Portfolio projects & benchmark exam score" : "Weekly consistency score & milestone checkoffs",
-        targetValue: ">= 85% completion rate",
-        feasibilityRisk: dailyMinutes < 30 ? ("high_risk" as const) : ("moderate_risk" as const),
-        feasibilitySummary: `At ${dailyMinutes} minutes/day, your timeline allows for approximately 35 total study hours. With standard buffers, this fits within a moderate risk profile.`,
-        assumptions: [
-          `Declared capacity of ${dailyMinutes} min/day holds steady throughout the horizon`,
-          "User has prerequisite foundational knowledge indicated in baseline",
-          "Includes 1 buffer day every 2 weeks for rest or unexpected life events",
-        ],
-        milestones: [
-          {
-            title: "Milestone 1: Foundations, Core Theory & Environment Setup",
-            description: "Establish environment, master syntax primitives, and build initial proof of concept.",
-            dueDate: "2026-11-10",
-            completionCriteria: ["Complete core interactive labs", "Pass initial diagnostic check"],
-            tasks: [
-              {
-                title: "Set up isolated development workspace & documentation folder",
-                description: "Configure workspace, clone starter boilerplate, and verify test runner.",
-                estimatedMinutes: 30,
-                dueDate: "2026-10-30",
-                priority: "high" as const,
-                completionCriteria: "Workspace environment verified with hello-world sample running",
-              },
-              {
-                title: "Complete Core Architecture Deep-Dive modules (1-3)",
-                description: "Study memory management, concurrency models, and network boundaries.",
-                estimatedMinutes: 45,
-                dueDate: "2026-11-02",
-                priority: "high" as const,
-                completionCriteria: "Summarize key architectural takeaways in 5 bullet points",
-              },
-              {
-                title: "Build standalone mini-service prototype",
-                description: "Write end-to-end integration test validating basic input/output behavior.",
-                estimatedMinutes: 40,
-                dueDate: "2026-11-06",
-                priority: "normal" as const,
-                completionCriteria: "All unit and integration tests passing locally",
-              },
-            ],
-          },
-          {
-            title: "Milestone 2: Production Readiness, Optimization & Scenarios",
-            description: "Harden for scale, configure security guardrails, and run real-world drills.",
-            dueDate: "2026-11-28",
-            completionCriteria: ["Pass mock drills with >= 80% accuracy", "Profile and eliminate bottlenecks"],
-            tasks: [
-              {
-                title: "Implement authentication, RBAC, and error isolation",
-                description: "Apply defensive authorization and structured logging across boundaries.",
-                estimatedMinutes: 45,
-                dueDate: "2026-11-15",
-                priority: "high" as const,
-                completionCriteria: "Test auth failure scenarios and verify safe degradation",
-              },
-              {
-                title: "Run full-scale load and reliability drill",
-                description: "Simulate network partitions and check automated recovery behavior.",
-                estimatedMinutes: 40,
-                dueDate: "2026-11-22",
-                priority: "normal" as const,
-                completionCriteria: "Verify recovery time under 30 seconds",
-              },
-            ],
-          },
-          {
-            title: "Milestone 3: Final Certification / Public Launch",
-            description: "Deliver final outcome, review lessons learned, and lock in long-term retention.",
-            dueDate: targetDate || "2026-12-15",
-            completionCriteria: ["Achieve targeted metric and document outcome evidence"],
-            tasks: [
-              {
-                title: "Conduct comprehensive review of lessons learned & edge cases",
-                description: "Revisit past notes, flashcards, or blocker logs to reinforce mastery.",
-                estimatedMinutes: 35,
-                dueDate: "2026-12-05",
-                priority: "normal" as const,
-                completionCriteria: "Complete retrospective log",
-              },
-              {
-                title: "Execute final target milestone delivery or test sitting",
-                description: "Complete the exam or publish project MVP to real users.",
-                estimatedMinutes: 60,
-                dueDate: targetDate || "2026-12-15",
-                priority: "high" as const,
-                completionCriteria: "Target outcome confirmed with recorded evidence",
-              },
-            ],
-          },
-        ],
-      };
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData.error || "Failed to generate roadmap with Gemini AI");
+      }
 
-      setGeneratedDraft(draft);
+      const data = await res.json();
+      if (data.draft) {
+        setGeneratedDraft(data.draft);
+      } else {
+        throw new Error("No roadmap generated by AI");
+      }
+    } catch (err: any) {
+      console.error("Gemini AI Roadmap Error:", err);
+      setErrorMessage(err?.message || "Failed to generate roadmap with Gemini AI.");
+    } finally {
       setIsGenerating(false);
-    }, 1200);
+    }
   };
 
   // Modify draft task during review
@@ -225,8 +155,8 @@ export function GoalBuilderFeature({ onGoalActivated }: { onGoalActivated?: () =
     });
   };
 
-  // PRD F-06: Roadmap Editor & Explicit Approval
-  const handleApproveRoadmap = () => {
+  // PRD F-06: Roadmap Editor & Explicit Approval -> Persists to Neon DB
+  const handleApproveRoadmap = async () => {
     if (!generatedDraft) return;
 
     // Flatten milestones and tasks for context
@@ -265,7 +195,7 @@ export function GoalBuilderFeature({ onGoalActivated }: { onGoalActivated?: () =
       });
     });
 
-    createGoalWithRoadmap(
+    await createGoalWithRoadmap(
       {
         title: generatedDraft.title,
         outcome: generatedDraft.outcome,
@@ -334,6 +264,12 @@ export function GoalBuilderFeature({ onGoalActivated }: { onGoalActivated?: () =
       {/* If No Draft Generated: Show Form */}
       {!generatedDraft ? (
         <div className="bg-slate-900/80 p-6 rounded-2xl border border-slate-800 shadow-xl space-y-5">
+          {errorMessage && (
+            <div className="p-3.5 rounded-xl bg-rose-950/40 border border-rose-500/40 text-xs text-rose-300 flex items-center gap-2">
+              <AlertTriangle className="w-4 h-4 text-rose-400 shrink-0" />
+              <span>{errorMessage}</span>
+            </div>
+          )}
           <div>
             <label className="block text-xs font-bold text-slate-200 mb-1">
               What outcome or ambition do you want to achieve? *
@@ -463,11 +399,10 @@ export function GoalBuilderFeature({ onGoalActivated }: { onGoalActivated?: () =
                   AI Feasibility & Risk Analysis
                 </span>
                 <span
-                  className={`px-2 py-0.5 rounded text-xs font-bold font-mono ${
-                    generatedDraft.feasibilityRisk === "low_risk"
-                      ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30"
-                      : "bg-amber-500/20 text-amber-300 border border-amber-500/30"
-                  }`}
+                  className={`px-2 py-0.5 rounded text-xs font-bold font-mono ${generatedDraft.feasibilityRisk === "low_risk"
+                    ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30"
+                    : "bg-amber-500/20 text-amber-300 border border-amber-500/30"
+                    }`}
                 >
                   {generatedDraft.feasibilityRisk.replace("_", " ").toUpperCase()}
                 </span>

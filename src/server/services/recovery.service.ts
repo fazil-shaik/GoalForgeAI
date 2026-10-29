@@ -1,38 +1,87 @@
 import { RecoveryRepository } from "@/server/repositories/recovery.repository";
+import { GoalRepository } from "@/server/repositories/goal.repository";
 import { TaskRepository } from "@/server/repositories/task.repository";
+import { CoachRepository } from "@/server/repositories/coach.repository";
+import { GeminiService } from "./gemini.service";
 
 export class RecoveryService {
   static async diagnoseAndPropose(
     goalId: string,
+    userId: string,
     userReason: string,
-    overdueTasks: Array<{ id: string; title: string; dueAt: string; estimateMinutes: number }>
+    todayDate: string
   ) {
-    // Generate balanced schedule distributing tasks across next days
-    const proposedDiff = overdueTasks.map((t, idx) => {
-      const dayOffset = idx + 1;
-      const targetDate = new Date();
-      targetDate.setDate(targetDate.getDate() + dayOffset);
-      const newDueDate = targetDate.toISOString().split("T")[0];
+    const goal = await GoalRepository.getById(goalId);
+    if (!goal) throw new Error("Goal not found");
 
-      return {
-        taskId: t.id,
-        newDueDate,
-        reason: `Rebalanced to day +${dayOffset} to protect daily capacity ceiling.`,
-      };
+    const allTasks = await TaskRepository.listByGoalId(goalId);
+    const overdueTasks = allTasks.filter(
+      (t) => t.status === "todo" && t.dueAt < todayDate
+    );
+
+    const upcomingTasks = allTasks.filter(
+      (t) => t.status === "todo" && t.dueAt >= todayDate
+    );
+
+    // If no strictly overdue tasks exist, use upcoming tasks or first tasks to demonstrate proactive recovery
+    const tasksToRebalance =
+      overdueTasks.length > 0 ? overdueTasks : upcomingTasks.slice(0, 3);
+
+    // Call real Gemini AI model to diagnose obstacle & generate structured recovery plan
+    const geminiProposal = await GeminiService.generateRecoveryPlan({
+      goalTitle: goal.title,
+      userReason: userReason || "Workload crunch and unexpected scheduling constraints",
+      dailyCapacity: 45,
+      todayDate,
+      overdueTasks: tasksToRebalance.map((t) => ({
+        id: t.id,
+        title: t.title,
+        dueDate: t.dueAt,
+        estimatedMinutes: t.estimateMinutes,
+        priority: t.priority,
+      })),
+      upcomingTasks: upcomingTasks.map((t) => ({
+        id: t.id,
+        title: t.title,
+        dueDate: t.dueAt,
+        estimatedMinutes: t.estimateMinutes,
+      })),
     });
 
-    return RecoveryRepository.createProposal(
+    // Save proposal to Neon DB
+    const savedProposal = await RecoveryRepository.createProposal(
       goalId,
-      userReason || `${overdueTasks.length} slipped tasks detected`,
-      proposedDiff
+      geminiProposal.triggerReason || userReason,
+      geminiProposal
     );
+
+    return savedProposal;
   }
 
-  static async approveRecoveryProposal(proposalId: string) {
-    return RecoveryRepository.applyProposal(proposalId);
+  static async approveRecoveryProposal(proposalId: string, userId?: string) {
+    const proposal = await RecoveryRepository.getProposal(proposalId);
+    if (!proposal) throw new Error("Proposal not found");
+
+    const updated = await RecoveryRepository.applyProposal(proposalId, userId);
+
+    // Add celebration coach message to DB
+    if (userId) {
+      await CoachRepository.addMessage({
+        userId,
+        goalId: proposal.goalId,
+        sender: "coach",
+        text: "🎉 Recovery Plan successfully applied to your schedule! Your backlog has been re-staged smoothly so you don't burn out. Take a deep breath — you're completely back on track.",
+        recommendedNextAction:
+          (proposal.proposedDiffJson as any)?.firstStep ||
+          "Complete today's primary bite-sized focus block.",
+        reason: "Small consistent actions rebuild self-efficacy faster than catching up in bursts.",
+      });
+    }
+
+    return updated;
   }
 
-  static async rejectRecoveryProposal(proposalId: string) {
-    return RecoveryRepository.rejectProposal(proposalId);
+  static async dismissRecoveryProposal(proposalId: string) {
+    return RecoveryRepository.dismissProposal(proposalId);
   }
 }

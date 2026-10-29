@@ -1,12 +1,26 @@
 import { getDb } from "@/db";
-import { planProposals, tasks, planVersions } from "@/db/schema";
-import { eq, desc } from "drizzle-orm";
+import { planProposals, tasks, taskEvents } from "@/db/schema";
+import { eq, and, desc } from "drizzle-orm";
 
 export class RecoveryRepository {
   static async createProposal(
     goalId: string,
     reason: string,
-    proposedDiff: Array<{ taskId: string; newDueDate: string; reason: string }>
+    fullProposal: {
+      triggerReason: string;
+      recoverySummary: string;
+      blockerHypotheses: Array<{ label: string; evidence: string }>;
+      firstStep: string;
+      proposedChanges: Array<{
+        taskId: string;
+        taskTitle: string;
+        action: "reschedule" | "split" | "deprioritize";
+        previousDueDate: string;
+        newDueDate: string;
+        reason: string;
+      }>;
+      tradeoffs: string[];
+    }
   ) {
     const db = getDb();
     if (!db) return null;
@@ -16,7 +30,7 @@ export class RecoveryRepository {
       .values({
         goalId,
         reason,
-        proposedDiffJson: proposedDiff,
+        proposedDiffJson: fullProposal,
         status: "pending",
       })
       .returning();
@@ -35,7 +49,19 @@ export class RecoveryRepository {
     return res[0] || null;
   }
 
-  static async applyProposal(proposalId: string) {
+  static async getLatestByGoalId(goalId: string) {
+    const db = getDb();
+    if (!db) return null;
+    const res = await db
+      .select()
+      .from(planProposals)
+      .where(eq(planProposals.goalId, goalId))
+      .orderBy(desc(planProposals.createdAt))
+      .limit(1);
+    return res[0] || null;
+  }
+
+  static async applyProposal(proposalId: string, userId?: string) {
     const db = getDb();
     if (!db) return null;
 
@@ -44,17 +70,38 @@ export class RecoveryRepository {
       throw new Error("Proposal not found or already processed");
     }
 
-    const diff = proposal.proposedDiffJson as Array<{ taskId: string; newDueDate: string }>;
+    const payload = proposal.proposedDiffJson as any;
+    const proposedChanges = Array.isArray(payload?.proposedChanges)
+      ? payload.proposedChanges
+      : Array.isArray(payload)
+      ? payload
+      : [];
 
     // Transactionally update rescheduled tasks
-    await Promise.all(
-      diff.map((item) =>
-        db
+    for (const change of proposedChanges) {
+      if (change.taskId && change.newDueDate) {
+        await db
           .update(tasks)
-          .set({ dueAt: item.newDueDate, status: "todo", updatedAt: new Date() })
-          .where(eq(tasks.id, item.taskId))
-      )
-    );
+          .set({
+            dueAt: change.newDueDate,
+            status: "todo",
+            updatedAt: new Date(),
+          })
+          .where(eq(tasks.id, change.taskId));
+
+        if (userId) {
+          await db.insert(taskEvents).values({
+            taskId: change.taskId,
+            userId,
+            eventType: "rescheduled",
+            metadataJson: {
+              newDueDate: change.newDueDate,
+              reason: "Applied via Goal Recovery Mode",
+            },
+          });
+        }
+      }
+    }
 
     // Mark proposal accepted
     const updated = await db
@@ -66,7 +113,7 @@ export class RecoveryRepository {
     return updated[0];
   }
 
-  static async rejectProposal(proposalId: string) {
+  static async dismissProposal(proposalId: string) {
     const db = getDb();
     if (!db) return null;
     const res = await db

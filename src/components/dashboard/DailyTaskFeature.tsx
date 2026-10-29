@@ -44,16 +44,19 @@ export function DailyTaskFeature({
   const [filterView, setFilterView] = useState<"today" | "all" | "completed">("today");
   const [showQuickAdd, setShowQuickAdd] = useState(false);
 
+  const todayDate = new Date().toISOString().split("T")[0];
+  const tomorrowDate = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().split("T")[0];
+
   // Quick Add State
   const [newTitle, setNewTitle] = useState("");
   const [newMinutes, setNewMinutes] = useState(30);
   const [newPriority, setNewPriority] = useState<TaskPriority>("high");
-  const [newDueDate, setNewDueDate] = useState("2026-10-28");
+  const [newDueDate, setNewDueDate] = useState(todayDate);
   const [newCriteria, setNewCriteria] = useState("");
 
   // Task Action Modals
   const [reschedulingTask, setReschedulingTask] = useState<Task | null>(null);
-  const [rescheduleDate, setRescheduleDate] = useState("2026-10-29");
+  const [rescheduleDate, setRescheduleDate] = useState(tomorrowDate);
   const [skippingTask, setSkippingTask] = useState<Task | null>(null);
   const [skipReason, setSkipReason] = useState("");
 
@@ -91,9 +94,9 @@ export function DailyTaskFeature({
 
   // Filter tasks for the active goal
   const goalTasks = tasks.filter((t) => t.goalId === activeGoal?.id);
-  const overdueTasks = goalTasks.filter((t) => t.status === "todo" && t.dueDate < "2026-10-28");
-  const todayTasks = goalTasks.filter((t) => t.dueDate === "2026-10-28" && t.status === "todo");
-  const upcomingTasks = goalTasks.filter((t) => t.dueDate > "2026-10-28" && t.status === "todo");
+  const overdueTasks = goalTasks.filter((t) => t.status === "todo" && t.dueDate < todayDate);
+  const todayTasks = goalTasks.filter((t) => t.dueDate === todayDate && t.status === "todo");
+  const upcomingTasks = goalTasks.filter((t) => t.dueDate > todayDate && t.status === "todo");
   const completedTasks = goalTasks.filter((t) => t.status === "completed" || t.status === "skipped");
 
   const totalPlannedToday = todayTasks.reduce((sum, t) => sum + t.estimatedMinutes, 0);
@@ -420,6 +423,13 @@ export function DailyTaskFeature({
                   >
                     Skip
                   </button>
+                  <button
+                    onClick={() => deleteTask(task.id)}
+                    title="Delete Task"
+                    className="p-1 text-slate-500 hover:text-rose-400 hover:bg-slate-800 rounded transition-colors"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
                 </div>
               </div>
             ))}
@@ -479,6 +489,13 @@ export function DailyTaskFeature({
                     className="px-2 py-1 text-[11px] rounded bg-slate-800 text-slate-400 hover:text-slate-200"
                   >
                     Skip
+                  </button>
+                  <button
+                    onClick={() => deleteTask(task.id)}
+                    title="Delete Task"
+                    className="p-1 text-slate-500 hover:text-rose-400 hover:bg-slate-800 rounded transition-colors"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
                   </button>
                 </div>
               </div>

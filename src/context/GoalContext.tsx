@@ -1,6 +1,6 @@
 "use client";
 
-import React, { createContext, useContext, useState, useEffect } from "react";
+import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
 import {
   Goal,
   Milestone,
@@ -9,12 +9,6 @@ import {
   CoachMessage,
   TaskStatus,
 } from "@/types/goal";
-import {
-  INITIAL_GOALS,
-  INITIAL_MILESTONES,
-  INITIAL_TASKS,
-  INITIAL_RECOVERY_PROPOSAL,
-} from "@/data/mockData";
 import confetti from "canvas-confetti";
 
 interface GoalContextType {
@@ -24,207 +18,191 @@ interface GoalContextType {
   tasks: Task[];
   recoveryProposal: RecoveryProposal | null;
   coachMessages: CoachMessage[];
+  isLoading: boolean;
   setActiveGoalId: (id: string) => void;
+  refreshData: () => Promise<void>;
   // Feature 1: Goal Builder & Roadmap Approval
   createGoalWithRoadmap: (
     goal: Omit<Goal, "id" | "activePlanVersion" | "createdAt">,
     milestones: Array<Omit<Milestone, "id" | "goalId">>,
     tasks: Array<Omit<Task, "id" | "goalId">>
-  ) => string;
+  ) => Promise<string | null>;
   // Feature 2: Task Management & Daily Execution
-  completeTask: (taskId: string, actualMinutes?: number) => void;
-  skipTask: (taskId: string, reason?: string) => void;
-  rescheduleTask: (taskId: string, newDate: string) => void;
-  addTask: (task: Omit<Task, "id" | "goalId">) => void;
-  deleteTask: (taskId: string) => void;
-  // Feature 3: Recovery Mode
-  generateRecoveryPlan: (userReason?: string) => void;
-  acceptRecoveryProposal: () => void;
-  dismissRecoveryProposal: () => void;
+  completeTask: (taskId: string, actualMinutes?: number) => Promise<void>;
+  skipTask: (taskId: string, reason?: string) => Promise<void>;
+  rescheduleTask: (taskId: string, newDate: string) => Promise<void>;
+  addTask: (task: Omit<Task, "id" | "goalId">) => Promise<void>;
+  deleteTask: (taskId: string) => Promise<void>;
+  // Feature 3: Recovery Mode (The Differentiator)
+  generateRecoveryPlan: (userReason?: string) => Promise<void>;
+  acceptRecoveryProposal: () => Promise<void>;
+  dismissRecoveryProposal: () => Promise<void>;
   // Feature 4: Coach & Feasibility
-  sendCoachMessage: (text: string) => void;
-  resetAllData: () => void;
+  sendCoachMessage: (text: string) => Promise<void>;
+  resetAllData: () => Promise<void>;
 }
-
-const STORAGE_KEYS = {
-  GOALS: "goalforge_goals",
-  MILESTONES: "goalforge_milestones",
-  TASKS: "goalforge_tasks",
-  RECOVERY: "goalforge_recovery",
-  COACH: "goalforge_coach",
-  ACTIVE_ID: "goalforge_active_goal_id",
-};
 
 const GoalContext = createContext<GoalContextType | undefined>(undefined);
 
 export function GoalProvider({ children }: { children: React.ReactNode }) {
-  const [goals, setGoals] = useState<Goal[]>(INITIAL_GOALS);
-  const [activeGoalId, setActiveGoalIdState] = useState<string>(INITIAL_GOALS[0].id);
-  const [milestones, setMilestones] = useState<Milestone[]>(INITIAL_MILESTONES);
-  const [tasks, setTasks] = useState<Task[]>(INITIAL_TASKS);
-  const [recoveryProposal, setRecoveryProposal] = useState<RecoveryProposal | null>(INITIAL_RECOVERY_PROPOSAL);
-  const [coachMessages, setCoachMessages] = useState<CoachMessage[]>([
-    {
-      id: "coach_msg_welcome",
-      sender: "coach",
-      text: "Welcome back! You have 2 overdue tasks from earlier this week. I can help you prioritize today's work or activate Goal Recovery Mode so you don't burn out.",
-      recommendedNextAction: "Review IAM Role Delegation lab or trigger 7-day Recovery Plan.",
-      reason: "Prioritizing identity foundations prevents downstream confusion in multi-account governance.",
-      timestamp: "2026-10-28T08:30:00Z",
-    },
-  ]);
+  const [goals, setGoals] = useState<Goal[]>([]);
+  const [activeGoalId, setActiveGoalIdState] = useState<string>("");
+  const [milestones, setMilestones] = useState<Milestone[]>([]);
+  const [tasks, setTasks] = useState<Task[]>([]);
+  const [recoveryProposal, setRecoveryProposal] = useState<RecoveryProposal | null>(null);
+  const [coachMessages, setCoachMessages] = useState<CoachMessage[]>([]);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
 
-  // Load from localStorage on client mount
-  useEffect(() => {
+  // Helper to fetch full graph for a goal
+  const fetchGoalDetails = useCallback(async (goalId: string) => {
     try {
-      const savedGoals = localStorage.getItem(STORAGE_KEYS.GOALS);
-      const savedMilestones = localStorage.getItem(STORAGE_KEYS.MILESTONES);
-      const savedTasks = localStorage.getItem(STORAGE_KEYS.TASKS);
-      const savedRecovery = localStorage.getItem(STORAGE_KEYS.RECOVERY);
-      const savedCoach = localStorage.getItem(STORAGE_KEYS.COACH);
-      const savedActiveId = localStorage.getItem(STORAGE_KEYS.ACTIVE_ID);
+      const res = await fetch(`/api/goals/${goalId}`);
+      if (!res.ok) return;
+      const data = await res.json();
 
-      if (savedGoals) setGoals(JSON.parse(savedGoals));
-      if (savedMilestones) setMilestones(JSON.parse(savedMilestones));
-      if (savedTasks) setTasks(JSON.parse(savedTasks));
-      if (savedRecovery) setRecoveryProposal(JSON.parse(savedRecovery));
-      if (savedCoach) setCoachMessages(JSON.parse(savedCoach));
-      if (savedActiveId) setActiveGoalIdState(savedActiveId);
-    } catch {
-      // fallback to initial state
+      if (data.goal) {
+        setMilestones(data.milestones || []);
+        setTasks(data.tasks || []);
+        setRecoveryProposal(data.activeProposal || null);
+        if (data.coachMessages && data.coachMessages.length > 0) {
+          setCoachMessages(data.coachMessages);
+        } else {
+          // Default initial coach greeting if DB is empty
+          setCoachMessages([
+            {
+              id: "welcome_coach",
+              sender: "coach",
+              text: `Welcome to your roadmap for "${data.goal.title}". I'm your dedicated AI coach. Focus on today's single priority, and let me know if you need tasks broken down or schedule adjustments.`,
+              recommendedNextAction: "Review today's planned focus sprint.",
+              reason: "Starting with a single small win establishes neuro-pathway momentum.",
+              timestamp: new Date().toISOString(),
+            },
+          ]);
+        }
+      }
+    } catch (err) {
+      console.error("Error fetching goal details from Neon DB:", err);
     }
   }, []);
 
-  // Save changes to localStorage
-  const persist = (
-    newGoals: Goal[],
-    newMilestones: Milestone[],
-    newTasks: Task[],
-    newRecovery: RecoveryProposal | null,
-    newCoach: CoachMessage[],
-    activeId?: string
-  ) => {
-    setGoals(newGoals);
-    setMilestones(newMilestones);
-    setTasks(newTasks);
-    setRecoveryProposal(newRecovery);
-    setCoachMessages(newCoach);
-    if (activeId) setActiveGoalIdState(activeId);
-
+  // Fetch all goals on initial mount
+  const loadGoals = useCallback(async () => {
     try {
-      localStorage.setItem(STORAGE_KEYS.GOALS, JSON.stringify(newGoals));
-      localStorage.setItem(STORAGE_KEYS.MILESTONES, JSON.stringify(newMilestones));
-      localStorage.setItem(STORAGE_KEYS.TASKS, JSON.stringify(newTasks));
-      if (newRecovery) {
-        localStorage.setItem(STORAGE_KEYS.RECOVERY, JSON.stringify(newRecovery));
-      } else {
-        localStorage.removeItem(STORAGE_KEYS.RECOVERY);
+      setIsLoading(true);
+      const res = await fetch("/api/goals");
+      if (!res.ok) {
+        setIsLoading(false);
+        return;
       }
-      localStorage.setItem(STORAGE_KEYS.COACH, JSON.stringify(newCoach));
-      if (activeId) localStorage.setItem(STORAGE_KEYS.ACTIVE_ID, activeId);
-    } catch {
-      // storage quota or disabled
+      const data = await res.json();
+      const userGoals: Goal[] = data.goals || [];
+
+      setGoals(userGoals);
+
+      if (userGoals.length > 0) {
+        const initialGoalId = activeGoalId && userGoals.some((g) => g.id === activeGoalId)
+          ? activeGoalId
+          : userGoals[0].id;
+
+        setActiveGoalIdState(initialGoalId);
+        await fetchGoalDetails(initialGoalId);
+      }
+    } catch (err) {
+      console.error("Error loading goals from Neon DB:", err);
+    } finally {
+      setIsLoading(false);
     }
-  };
+  }, [activeGoalId, fetchGoalDetails]);
+
+  useEffect(() => {
+    loadGoals();
+  }, [loadGoals]);
 
   const activeGoal = goals.find((g) => g.id === activeGoalId) || goals[0] || null;
 
   const setActiveGoalId = (id: string) => {
     setActiveGoalIdState(id);
-    try {
-      localStorage.setItem(STORAGE_KEYS.ACTIVE_ID, id);
-    } catch {
-      // Ignore storage errors
+    fetchGoalDetails(id);
+  };
+
+  const refreshData = async () => {
+    if (activeGoalId) {
+      await fetchGoalDetails(activeGoalId);
+    } else {
+      await loadGoals();
     }
   };
 
-  // Feature 1: Create Goal & Roadmap
-  const createGoalWithRoadmap = (
+  // Feature 1: Create Goal with Roadmap in Neon DB
+  const createGoalWithRoadmap = async (
     goalData: Omit<Goal, "id" | "activePlanVersion" | "createdAt">,
     milestonesData: Array<Omit<Milestone, "id" | "goalId">>,
     tasksData: Array<Omit<Task, "id" | "goalId">>
-  ) => {
-    const goalId = "goal_" + Math.random().toString(36).substring(2, 9);
-    const newGoal: Goal = {
-      ...goalData,
-      id: goalId,
-      activePlanVersion: 1,
-      createdAt: new Date().toISOString(),
-    };
-
-    // Map temporary milestone IDs to new persistent IDs
-    const milestoneIdMap = new Map<string, string>();
-    const newMilestones: Milestone[] = milestonesData.map((m, idx) => {
-      const newMId = `ms_${goalId}_${idx + 1}`;
-      milestoneIdMap.set(`m_${idx + 1}`, newMId);
-      return {
-        ...m,
-        id: newMId,
-        goalId,
-      };
-    });
-
-    const newTasks: Task[] = tasksData.map((t, idx) => {
-      const mappedMilestoneId =
-        milestoneIdMap.get(t.milestoneId) ||
-        newMilestones[0]?.id ||
-        `ms_${goalId}_1`;
-      return {
-        ...t,
-        id: `task_${goalId}_${idx + 1}`,
-        goalId,
-        milestoneId: mappedMilestoneId,
-      };
-    });
-
-    const updatedGoals = [newGoal, ...goals];
-    const updatedMilestones = [...milestones, ...newMilestones];
-    const updatedTasks = [...tasks, ...newTasks];
-
-    persist(updatedGoals, updatedMilestones, updatedTasks, recoveryProposal, coachMessages, goalId);
-
-    // Trigger celebration
+  ): Promise<string | null> => {
     try {
-      confetti({
-        particleCount: 80,
-        spread: 60,
-        origin: { y: 0.6 },
+      const res = await fetch("/api/goals", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          goal: goalData,
+          milestones: milestonesData,
+          tasks: tasksData,
+        }),
       });
-    } catch {
-      // canvas-confetti safety
-    }
 
-    return goalId;
+      if (!res.ok) {
+        throw new Error("Failed to save goal to Neon DB");
+      }
+
+      const result = await res.json();
+      const newGoalId = result.goal?.id;
+
+      // Celebrate roadmap activation!
+      try {
+        confetti({
+          particleCount: 90,
+          spread: 70,
+          origin: { y: 0.6 },
+        });
+      } catch {
+        // Safe canvas-confetti
+      }
+
+      // Reload goals and switch to the newly created goal
+      const goalsRes = await fetch("/api/goals");
+      if (goalsRes.ok) {
+        const gData = await goalsRes.json();
+        setGoals(gData.goals || []);
+      }
+
+      if (newGoalId) {
+        setActiveGoalIdState(newGoalId);
+        await fetchGoalDetails(newGoalId);
+      }
+
+      return newGoalId;
+    } catch (err) {
+      console.error("Error creating goal with roadmap:", err);
+      return null;
+    }
   };
 
   // Feature 2: Task Execution
-  const completeTask = (taskId: string, actualMinutes?: number) => {
-    const updated = tasks.map((t) => {
-      if (t.id === taskId) {
-        return {
-          ...t,
-          status: "completed" as TaskStatus,
-          actualMinutes: actualMinutes ?? t.estimatedMinutes,
-          completedAt: new Date().toISOString(),
-        };
-      }
-      return t;
-    });
+  const completeTask = async (taskId: string, actualMinutes?: number) => {
+    // 1. Optimistic UI update
+    setTasks((prev) =>
+      prev.map((t) =>
+        t.id === taskId
+          ? {
+              ...t,
+              status: "completed" as TaskStatus,
+              actualMinutes: actualMinutes ?? t.estimatedMinutes,
+              completedAt: new Date().toISOString(),
+            }
+          : t
+      )
+    );
 
-    // Check if parent milestone completed
-    const targetTask = tasks.find((t) => t.id === taskId);
-    let updatedMilestones = milestones;
-    if (targetTask) {
-      const milestoneTasks = updated.filter((t) => t.milestoneId === targetTask.milestoneId);
-      const allDone = milestoneTasks.length > 0 && milestoneTasks.every((t) => t.status === "completed" || t.status === "skipped");
-      if (allDone) {
-        updatedMilestones = milestones.map((m) =>
-          m.id === targetTask.milestoneId ? { ...m, status: "completed" as const } : m
-        );
-      }
-    }
-
-    // Confetti celebration!
     try {
       confetti({
         particleCount: 50,
@@ -232,222 +210,245 @@ export function GoalProvider({ children }: { children: React.ReactNode }) {
         origin: { y: 0.7 },
       });
     } catch {
-      // Ignore
+      // safe
     }
 
-    persist(goals, updatedMilestones, updated, recoveryProposal, coachMessages);
+    // 2. Persist to Neon DB
+    try {
+      await fetch(`/api/tasks/${taskId}/complete`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ actualMinutes }),
+      });
+    } catch (err) {
+      console.error("Error completing task in Neon DB:", err);
+    }
   };
 
-  const skipTask = (taskId: string, reason?: string) => {
-    const updated = tasks.map((t) =>
-      t.id === taskId
-        ? {
-            ...t,
-            status: "skipped" as TaskStatus,
-            notes: reason ? `Skipped: ${reason}` : t.notes,
-          }
-        : t
+  const skipTask = async (taskId: string, reason?: string) => {
+    // Optimistic UI update
+    setTasks((prev) =>
+      prev.map((t) =>
+        t.id === taskId
+          ? {
+              ...t,
+              status: "skipped" as TaskStatus,
+              notes: reason ? `Skipped: ${reason}` : t.notes,
+            }
+          : t
+      )
     );
-    persist(goals, milestones, updated, recoveryProposal, coachMessages);
+
+    // Persist to Neon DB
+    try {
+      await fetch(`/api/tasks/${taskId}/skip`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ reason }),
+      });
+    } catch (err) {
+      console.error("Error skipping task in Neon DB:", err);
+    }
   };
 
-  const rescheduleTask = (taskId: string, newDate: string) => {
-    const updated = tasks.map((t) =>
-      t.id === taskId
-        ? {
-            ...t,
-            dueDate: newDate,
-            status: "todo" as TaskStatus,
-          }
-        : t
+  const rescheduleTask = async (taskId: string, newDate: string) => {
+    // Optimistic UI update
+    setTasks((prev) =>
+      prev.map((t) =>
+        t.id === taskId
+          ? {
+              ...t,
+              dueDate: newDate,
+              status: "todo" as TaskStatus,
+            }
+          : t
+      )
     );
-    persist(goals, milestones, updated, recoveryProposal, coachMessages);
+
+    // Persist to Neon DB
+    try {
+      await fetch(`/api/tasks/${taskId}/reschedule`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ dueDate: newDate }),
+      });
+    } catch (err) {
+      console.error("Error rescheduling task in Neon DB:", err);
+    }
   };
 
-  const addTask = (taskData: Omit<Task, "id" | "goalId">) => {
+  const addTask = async (taskData: Omit<Task, "id" | "goalId">) => {
     if (!activeGoal) return;
-    const newTask: Task = {
-      ...taskData,
-      id: "task_" + Math.random().toString(36).substring(2, 9),
-      goalId: activeGoal.id,
-    };
-    persist(goals, milestones, [newTask, ...tasks], recoveryProposal, coachMessages);
+
+    try {
+      const res = await fetch("/api/tasks", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ...taskData,
+          goalId: activeGoal.id,
+          milestoneId: taskData.milestoneId || milestones[0]?.id,
+        }),
+      });
+
+      if (res.ok) {
+        const result = await res.json();
+        if (result.task) {
+          setTasks((prev) => [result.task, ...prev]);
+        }
+      }
+    } catch (err) {
+      console.error("Error adding task to Neon DB:", err);
+    }
   };
 
-  const deleteTask = (taskId: string) => {
-    const updated = tasks.filter((t) => t.id !== taskId);
-    persist(goals, milestones, updated, recoveryProposal, coachMessages);
+  const deleteTask = async (taskId: string) => {
+    setTasks((prev) => prev.filter((t) => t.id !== taskId));
+
+    try {
+      await fetch(`/api/tasks/${taskId}`, {
+        method: "DELETE",
+      });
+    } catch (err) {
+      console.error("Error deleting task from Neon DB:", err);
+    }
   };
 
-  // Feature 3: Recovery Mode (The Differentiator)
-  const generateRecoveryPlan = (userReason?: string) => {
+  // Feature 3: Recovery Mode (The Differentiator - Powered by Gemini AI)
+  const generateRecoveryPlan = async (userReason?: string) => {
     if (!activeGoal) return;
-    const goalTasks = tasks.filter((t) => t.goalId === activeGoal.id);
-    const overdue = goalTasks.filter((t) => t.status === "todo" && t.dueDate < "2026-10-28");
 
-    const totalOverdueMinutes = overdue.reduce((sum, t) => sum + t.estimatedMinutes, 0);
+    try {
+      const todayDate = new Date().toISOString().split("T")[0];
+      const res = await fetch("/api/ai/recovery-plan", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          goalId: activeGoal.id,
+          userReason: userReason || "Schedule crunch & unexpected friction",
+          todayDate,
+        }),
+      });
 
-    const proposed: RecoveryProposal = {
-      id: "rec_" + Math.random().toString(36).substring(2, 9),
-      goalId: activeGoal.id,
-      triggerReason: userReason || `${overdue.length} overdue tasks (${totalOverdueMinutes} minutes backlog)`,
-      recoverySummary: `We analyzed your schedule and current momentum. Rather than asking you to do an exhausting ${totalOverdueMinutes + 45} minutes in a single day, we staged your overdue work smoothly across the next 5 days, keeping your daily load within your 45-minute comfort zone.`,
-      blockerHypotheses: [
-        {
-          label: "Context Switching or Time Squeeze",
-          evidence: userReason ? `User reported: "${userReason}"` : "Missed consecutive mid-week scheduled blocks.",
-        },
-        {
-          label: "Workload Density",
-          evidence: `Accumulated ${totalOverdueMinutes} minutes of high-priority tasks in a 48-hour window.`,
-        },
-      ],
-      proposedChanges: overdue.map((t, idx) => {
-        // Distribute dates over next days (2026-10-28, 2026-10-29, 2026-10-30, etc.)
-        const dayOffset = idx + 1;
-        const newDate = `2026-10-${(27 + dayOffset).toString().padStart(2, "0")}`;
-        return {
-          taskId: t.id,
-          taskTitle: t.title,
-          action: "reschedule",
-          previousDueDate: t.dueDate,
-          newDueDate: newDate,
-          reason: `Shifted to Day +${dayOffset} to protect daily 45-min capacity ceiling.`,
-        };
-      }),
-      firstStep: overdue[0]
-        ? `Start with 20 minutes on "${overdue[0].title}" — that alone restarts your momentum!`
-        : "Complete today's primary 30-minute task without looking back.",
-      tradeoffs: [
-        "Slightly condenses the review buffer before the final milestone.",
-        "Zero extension of your final target deadline.",
-        "Guarantees you never have to work more than 45 minutes on any single evening.",
-      ],
-      status: "pending",
-      createdAt: new Date().toISOString(),
-    };
-
-    persist(goals, milestones, tasks, proposed, coachMessages);
+      if (res.ok) {
+        const data = await res.json();
+        if (data.proposal) {
+          setRecoveryProposal(data.proposal);
+        }
+      }
+    } catch (err) {
+      console.error("Error generating Gemini AI recovery plan:", err);
+    }
   };
 
-  const acceptRecoveryProposal = () => {
+  const acceptRecoveryProposal = async () => {
     if (!recoveryProposal) return;
 
-    // Apply proposed reschedules transactionally
-    const changeMap = new Map(recoveryProposal.proposedChanges.map((c) => [c.taskId, c.newDueDate]));
-    const updatedTasks = tasks.map((t) => {
-      if (changeMap.has(t.id)) {
-        return {
-          ...t,
-          dueDate: changeMap.get(t.id)!,
-          status: "todo" as TaskStatus,
-          notes: (t.notes ? t.notes + " | " : "") + "Rescheduled via Recovery Mode",
-        };
-      }
-      return t;
-    });
+    // 1. Optimistic UI update: apply new dates to tasks
+    const changeMap = new Map(
+      recoveryProposal.proposedChanges.map((c) => [c.taskId, c.newDueDate])
+    );
 
-    const acceptedProposal: RecoveryProposal = {
+    setTasks((prev) =>
+      prev.map((t) => {
+        if (changeMap.has(t.id)) {
+          return {
+            ...t,
+            dueDate: changeMap.get(t.id)!,
+            status: "todo" as TaskStatus,
+            notes: (t.notes ? t.notes + " | " : "") + "Rescheduled via Recovery Mode",
+          };
+        }
+        return t;
+      })
+    );
+
+    setRecoveryProposal({
       ...recoveryProposal,
       status: "accepted",
-    };
-
-    // Coach announces success
-    const newCoachMsg: CoachMessage = {
-      id: "coach_" + Math.random().toString(36).substring(2, 9),
-      sender: "coach",
-      text: "🎉 Recovery Plan successfully applied! Your schedule is balanced again and the guilt is cleared. Let's tackle today's first bite-sized action.",
-      recommendedNextAction: acceptedProposal.firstStep,
-      reason: "Small manageable actions rebuild self-efficacy faster than catching up in bursts.",
-      timestamp: new Date().toISOString(),
-    };
+    });
 
     try {
       confetti({
-        particleCount: 70,
+        particleCount: 80,
         spread: 60,
         origin: { y: 0.6 },
       });
     } catch {
-      // Ignore
+      // safe
     }
 
-    persist(goals, milestones, updatedTasks, acceptedProposal, [newCoachMsg, ...coachMessages]);
+    // 2. Persist to Neon DB
+    try {
+      await fetch(`/api/proposals/${recoveryProposal.id}/approve`, {
+        method: "POST",
+      });
+
+      // Refresh coach messages to show celebration message
+      if (activeGoal) {
+        await fetchGoalDetails(activeGoal.id);
+      }
+    } catch (err) {
+      console.error("Error accepting recovery proposal in Neon DB:", err);
+    }
   };
 
-  const dismissRecoveryProposal = () => {
+  const dismissRecoveryProposal = async () => {
     if (!recoveryProposal) return;
-    const dismissed: RecoveryProposal = {
-      ...recoveryProposal,
-      status: "dismissed",
-    };
-    persist(goals, milestones, tasks, dismissed, coachMessages);
-  };
 
-  // Feature 4: Coach Chat
-  const sendCoachMessage = (text: string) => {
-    const userMsg: CoachMessage = {
-      id: "usr_msg_" + Math.random().toString(36).substring(2, 9),
-      sender: "user",
-      text,
-      timestamp: new Date().toISOString(),
-    };
+    const proposalId = recoveryProposal.id;
+    setRecoveryProposal(null);
 
-    // Generate intelligent contextual response
-    const goalTasks = tasks.filter((t) => t.goalId === activeGoal?.id);
-    const todayTasks = goalTasks.filter((t) => t.dueDate === "2026-10-28" && t.status === "todo");
-    const overdueTasks = goalTasks.filter((t) => t.dueDate < "2026-10-28" && t.status === "todo");
-
-    let coachReply = "";
-    let nextAction = "";
-    let reason = "";
-
-    const lower = text.toLowerCase();
-    if (lower.includes("time") || lower.includes("busy") || lower.includes("overwhelm")) {
-      coachReply = `I understand completely. Life gets busy, and sticking to rigid plans is what leads to quitting. Since your time is tight today, let's prune non-essential items.`;
-      nextAction = todayTasks[0] ? `Do only 15 minutes of: ${todayTasks[0].title}` : `Complete 1 quick 15-minute review drill.`;
-      reason = "Micro-progress maintains neuro-pathway momentum without triggering burnout.";
-    } else if (lower.includes("block") || lower.includes("stuck") || lower.includes("hard")) {
-      coachReply = `When a task feels too intimidating, it almost always means the scope is too broad. Let's break it down into 3 ultra-clear subtasks of 10 minutes each.`;
-      nextAction = "1) Outline key concepts on paper, 2) Skim the reference docs for 10 min, 3) Write 3 summary bullets.";
-      reason = "Lowering the cognitive threshold makes starting friction virtually zero.";
-    } else if (lower.includes("exam") || lower.includes("pass") || lower.includes("score")) {
-      coachReply = `Your baseline is already strong, and you've completed Milestone 1 successfully. The key now is steady retention in IAM and VPC topologies rather than cramming.`;
-      nextAction = "Take a 10-question quiz and review only the explanations for wrong answers.";
-      reason = "Targeted review of error patterns yields 3x higher retention than passive reading.";
-    } else {
-      coachReply = `I've reviewed your current roadmap for "${activeGoal?.title}". You have ${todayTasks.length} task(s) on your radar for today and ${overdueTasks.length} pending from earlier. Remember: consistency beats intensity every time.`;
-      nextAction = todayTasks[0]?.title || overdueTasks[0]?.title || "Review your weekly milestones";
-      reason = "Focusing on today's single highest-priority task moves the needle fastest.";
+    try {
+      await fetch(`/api/proposals/${proposalId}/dismiss`, {
+        method: "POST",
+      });
+    } catch (err) {
+      console.error("Error dismissing recovery proposal:", err);
     }
+  };
 
-    const assistantMsg: CoachMessage = {
-      id: "coach_msg_" + Math.random().toString(36).substring(2, 9),
-      sender: "coach",
-      text: coachReply,
-      recommendedNextAction: nextAction,
-      reason,
+  // Feature 4: Coach Chat (Powered by Gemini AI)
+  const sendCoachMessage = async (text: string) => {
+    if (!text.trim()) return;
+
+    // Optimistically add user message
+    const tempUserMsg: CoachMessage = {
+      id: "usr_" + Math.random().toString(36).substring(2, 9),
+      sender: "user",
+      text: text.trim(),
       timestamp: new Date().toISOString(),
     };
 
-    persist(goals, milestones, tasks, recoveryProposal, [assistantMsg, userMsg, ...coachMessages]);
+    setCoachMessages((prev) => [tempUserMsg, ...prev]);
+
+    try {
+      const todayDate = new Date().toISOString().split("T")[0];
+      const res = await fetch("/api/ai/coach", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          goalId: activeGoal?.id,
+          message: text.trim(),
+          todayDate,
+        }),
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        if (data.coachMessage) {
+          setCoachMessages((prev) => [data.coachMessage, ...prev]);
+        }
+      }
+    } catch (err) {
+      console.error("Error communicating with Gemini AI coach:", err);
+    }
   };
 
-  const resetAllData = () => {
-    localStorage.clear();
-    setGoals(INITIAL_GOALS);
-    setMilestones(INITIAL_MILESTONES);
-    setTasks(INITIAL_TASKS);
-    setRecoveryProposal(INITIAL_RECOVERY_PROPOSAL);
-    setActiveGoalIdState(INITIAL_GOALS[0].id);
-    setCoachMessages([
-      {
-        id: "coach_msg_welcome",
-        sender: "coach",
-        text: "Data restored to baseline demo state.",
-        timestamp: new Date().toISOString(),
-      },
-    ]);
+  const resetAllData = async () => {
+    if (activeGoal) {
+      await fetchGoalDetails(activeGoal.id);
+    }
   };
 
   return (
@@ -459,7 +460,9 @@ export function GoalProvider({ children }: { children: React.ReactNode }) {
         tasks,
         recoveryProposal,
         coachMessages,
+        isLoading,
         setActiveGoalId,
+        refreshData,
         createGoalWithRoadmap,
         completeTask,
         skipTask,
