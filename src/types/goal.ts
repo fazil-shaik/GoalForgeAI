@@ -116,4 +116,6 @@ export interface LeaderboardUserEntry {
   }>;
   forgeScore: number;
   isCurrentUser: boolean;
+  isPublic?: boolean;
+  isMasked?: boolean;
 }

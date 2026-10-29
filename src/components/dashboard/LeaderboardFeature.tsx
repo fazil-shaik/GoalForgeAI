@@ -23,9 +23,19 @@ import {
   Star,
   Check,
   Lock,
+  Globe,
+  Share2,
 } from "lucide-react";
 
-export function LeaderboardFeature() {
+interface LeaderboardFeatureProps {
+  onOpenProfile?: () => void;
+  onOpenShare?: (mode?: "kickoff" | "streak" | "victory") => void;
+}
+
+export function LeaderboardFeature({
+  onOpenProfile,
+  onOpenShare,
+}: LeaderboardFeatureProps = {}) {
   const { user } = useAuth();
   const {
     streak,
@@ -278,18 +288,58 @@ export function LeaderboardFeature() {
             Daily Streak & Velocity
           </button>
 
-          {/* Complete Goal Trigger Button */}
-          {activeGoal && activeGoal.status !== "completed" && (
-            <button
-              type="button"
-              disabled={isCompletingGoal}
-              onClick={handleCompleteActiveGoal}
-              className="ml-auto px-4 py-2 rounded-xl text-xs font-bold bg-gradient-to-r from-emerald-500 to-teal-500 text-slate-950 hover:brightness-110 shadow-lg shadow-emerald-500/20 flex items-center gap-2 cursor-pointer transition-all"
-            >
-              <CheckCircle2 className="w-4 h-4" />
-              {isCompletingGoal ? "Finalizing Goal..." : "Mark Active Goal as Completed"}
-            </button>
-          )}
+          {/* Action buttons: Share, Privacy & Goal Completion */}
+          <div className="flex items-center gap-2 ml-auto shrink-0">
+            {onOpenShare && (
+              <button
+                type="button"
+                onClick={() => onOpenShare(activeTab === "streak" ? "streak" : "kickoff")}
+                className="px-3.5 py-2 rounded-xl text-xs font-semibold bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 flex items-center gap-1.5 transition-all shadow-sm cursor-pointer"
+                title="Share your milestone, medals, or streak to X and LinkedIn"
+              >
+                <Share2 className="w-3.5 h-3.5 text-cyan-400" />
+                <span className="hidden sm:inline">Share on Socials</span>
+              </button>
+            )}
+
+            {onOpenProfile && (
+              <button
+                type="button"
+                onClick={onOpenProfile}
+                className={`px-3 py-2 rounded-xl text-xs font-semibold border flex items-center gap-1.5 transition-all cursor-pointer ${
+                  user?.isPublic !== false
+                    ? "bg-emerald-500/10 text-emerald-300 border-emerald-500/30 hover:bg-emerald-500/20"
+                    : "bg-amber-500/10 text-amber-300 border-amber-500/30 hover:bg-amber-500/20"
+                }`}
+                title="Click to toggle Public vs Private profile visibility on leaderboard"
+              >
+                {user?.isPublic !== false ? (
+                  <>
+                    <Globe className="w-3.5 h-3.5" />
+                    <span className="hidden md:inline">Public Profile</span>
+                  </>
+                ) : (
+                  <>
+                    <Lock className="w-3.5 h-3.5" />
+                    <span className="hidden md:inline">Private (Masked)</span>
+                  </>
+                )}
+              </button>
+            )}
+
+            {/* Complete Goal Trigger Button */}
+            {activeGoal && activeGoal.status !== "completed" && (
+              <button
+                type="button"
+                disabled={isCompletingGoal}
+                onClick={handleCompleteActiveGoal}
+                className="px-4 py-2 rounded-xl text-xs font-bold bg-gradient-to-r from-emerald-500 to-teal-500 text-slate-950 hover:brightness-110 shadow-lg shadow-emerald-500/20 flex items-center gap-2 cursor-pointer transition-all"
+              >
+                <CheckCircle2 className="w-4 h-4" />
+                {isCompletingGoal ? "Finalizing..." : "Complete Goal"}
+              </button>
+            )}
+          </div>
         </div>
       </div>
 
@@ -524,9 +574,14 @@ export function LeaderboardFeature() {
                             <div>
                               <p className="font-bold text-white flex items-center gap-2">
                                 {entry.name}
+                                {entry.isMasked && (
+                                  <span className="inline-flex items-center gap-1 text-[10px] font-mono px-2 py-0.5 rounded-full bg-slate-800 text-slate-400 border border-slate-700">
+                                    <Lock className="w-2.5 h-2.5 text-amber-400" /> Masked
+                                  </span>
+                                )}
                                 {isUser && (
-                                  <span className="px-2 py-0.5 rounded-full bg-emerald-500 text-slate-950 text-[10px] font-black font-mono">
-                                    YOU
+                                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500 text-slate-950 text-[10px] font-black font-mono">
+                                    YOU {user?.isPublic === false ? "• PRIVATE" : ""}
                                   </span>
                                 )}
                               </p>

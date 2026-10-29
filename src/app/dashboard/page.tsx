@@ -29,7 +29,9 @@ import {
   RefreshCw,
   Compass,
   Sliders,
-  Lock
+  Lock,
+  Globe,
+  Share2,
 } from "lucide-react";
 
 import { GoalBuilderFeature } from "@/components/dashboard/GoalBuilderFeature";
@@ -38,6 +40,8 @@ import { RecoveryModeFeature } from "@/components/dashboard/RecoveryModeFeature"
 import { AiCoachFeature } from "@/components/dashboard/AiCoachFeature";
 import { LeaderboardFeature } from "@/components/dashboard/LeaderboardFeature";
 import { MedalCelebrationModal } from "@/components/dashboard/MedalCelebrationModal";
+import { ProfileSettingsModal } from "@/components/dashboard/ProfileSettingsModal";
+import { SocialShareModal } from "@/components/dashboard/SocialShareModal";
 import {
   DailyTasksLogo,
   RoadmapBuilderLogo,
@@ -74,6 +78,9 @@ export default function DashboardPage() {
   const [activeTab, setActiveTab] = useState<DashboardTab>("tasks");
   const [isGoalDropdownOpen, setIsGoalDropdownOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+  const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
+  const [isSocialShareOpen, setIsSocialShareOpen] = useState(false);
+  const [socialShareMode, setSocialShareMode] = useState<"kickoff" | "streak" | "victory">("kickoff");
 
   // If checking authentication
   if (sessionStatus === "loading") {
@@ -91,10 +98,12 @@ export default function DashboardPage() {
   }
 
   const currentUser = {
-    name: session?.user?.name || "GoalForge User",
-    email: session?.user?.email || "",
-    image: session?.user?.image,
-    preferences: (session?.user as any)?.preferences || {
+    name: user?.name || session?.user?.name || "GoalForge User",
+    email: user?.email || session?.user?.email || "",
+    image: user?.avatarUrl || session?.user?.image,
+    bio: user?.bio || "",
+    isPublic: user?.isPublic ?? true,
+    preferences: user?.preferences || (session?.user as any)?.preferences || {
       availableMinutesPerDay: 45,
       coachingStyle: "compassionate",
     },
@@ -252,19 +261,42 @@ export default function DashboardPage() {
               )}
             </button>
 
+            {/* Quick Share to Socials Button */}
+            <button
+              type="button"
+              onClick={() => {
+                setSocialShareMode(streak?.currentStreak ? "streak" : "kickoff");
+                setIsSocialShareOpen(true);
+              }}
+              className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-white/10 bg-slate-900/80 hover:bg-slate-800 text-slate-300 hover:text-white text-xs font-semibold backdrop-blur-md transition-all shadow-sm cursor-pointer"
+              title="Share Goal & Streak Progress on X and LinkedIn"
+            >
+              <Share2 className="w-3.5 h-3.5 text-cyan-400" />
+              <span>Share</span>
+            </button>
+
             {/* User Profile Menu */}
             <div className="relative">
               <button
                 onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
                 className="flex items-center gap-2 p-1.5 rounded-xl hover:bg-slate-800/80 transition-colors"
               >
-                <div className="w-8 h-8 rounded-lg bg-indigo-600/30 border border-indigo-500/40 text-indigo-300 flex items-center justify-center font-bold text-xs">
-                  {currentUser.name?.slice(0, 2).toUpperCase() || "GF"}
+                <div className="w-8 h-8 rounded-lg bg-indigo-600/30 border border-indigo-500/40 text-indigo-300 flex items-center justify-center font-bold text-xs overflow-hidden">
+                  {currentUser.image ? (
+                    <img src={currentUser.image} alt={currentUser.name} className="w-full h-full object-cover" />
+                  ) : (
+                    currentUser.name?.slice(0, 2).toUpperCase() || "GF"
+                  )}
                 </div>
                 <div className="hidden lg:flex flex-col text-left">
                   <span className="text-xs font-semibold text-slate-200">{currentUser.name}</span>
-                  <span className="text-[10px] text-emerald-400 font-mono">
+                  <span className="text-[10px] text-emerald-400 font-mono flex items-center gap-1">
                     {currentUser.preferences.availableMinutesPerDay}m/d • {currentUser.preferences.coachingStyle}
+                    {currentUser.isPublic ? (
+                      <span className="text-emerald-400" title="Public Profile">●</span>
+                    ) : (
+                      <span className="text-amber-400" title="Private Profile">●</span>
+                    )}
                   </span>
                 </div>
                 <ChevronDown className="w-3.5 h-3.5 text-slate-400 hidden lg:inline" />
@@ -275,9 +307,47 @@ export default function DashboardPage() {
                   <div className="px-4 py-2 border-b border-slate-800">
                     <p className="text-xs font-bold text-white">{currentUser.name}</p>
                     <p className="text-[11px] text-slate-400 truncate">{currentUser.email}</p>
-                    <div className="mt-1.5 flex items-center gap-2 text-[10px] text-indigo-400 bg-indigo-950/40 px-2 py-0.5 rounded border border-indigo-500/20">
+                    <div className="mt-1.5 flex items-center justify-between text-[10px] text-indigo-400 bg-indigo-950/40 px-2 py-0.5 rounded border border-indigo-500/20">
                       <span>Coaching: {currentUser.preferences.coachingStyle}</span>
+                      <span className="font-mono">{currentUser.preferences.availableMinutesPerDay}m/day</span>
                     </div>
+                  </div>
+
+                  {/* Profile & Privacy and Social Actions */}
+                  <div className="px-2 py-1.5 border-b border-slate-800 space-y-0.5">
+                    <button
+                      onClick={() => {
+                        setIsUserMenuOpen(false);
+                        setIsProfileModalOpen(true);
+                      }}
+                      className="w-full text-left px-2.5 py-1.5 rounded-lg text-xs font-semibold text-slate-200 hover:bg-slate-800 flex items-center justify-between transition-colors cursor-pointer"
+                    >
+                      <span className="flex items-center gap-2">
+                        <Sliders className="w-3.5 h-3.5 text-indigo-400" />
+                        Edit Profile & Privacy
+                      </span>
+                      {currentUser.isPublic ? (
+                        <span className="text-[10px] text-emerald-400 font-mono flex items-center gap-1">
+                          <Globe className="w-2.5 h-2.5" /> Public
+                        </span>
+                      ) : (
+                        <span className="text-[10px] text-amber-400 font-mono flex items-center gap-1">
+                          <Lock className="w-2.5 h-2.5" /> Private
+                        </span>
+                      )}
+                    </button>
+
+                    <button
+                      onClick={() => {
+                        setIsUserMenuOpen(false);
+                        setSocialShareMode("kickoff");
+                        setIsSocialShareOpen(true);
+                      }}
+                      className="w-full text-left px-2.5 py-1.5 rounded-lg text-xs font-semibold text-slate-200 hover:bg-slate-800 flex items-center gap-2 transition-colors cursor-pointer"
+                    >
+                      <Share2 className="w-3.5 h-3.5 text-cyan-400" />
+                      Share on X & LinkedIn
+                    </button>
                   </div>
 
                   <div className="px-4 py-2 text-[10px] text-slate-400 space-y-1">
@@ -285,14 +355,14 @@ export default function DashboardPage() {
                       <ShieldCheck className="w-3.5 h-3.5" /> Google OAuth Verified
                     </p>
                     <p className="text-[10px] text-slate-500">
-                      User record synced with Neon PostgreSQL.
+                      Synced with Neon PostgreSQL database.
                     </p>
                   </div>
 
                   <div className="border-t border-slate-800 mt-2 pt-1">
                     <button
                       onClick={handleSignOut}
-                      className="w-full text-left px-4 py-2 text-xs font-semibold text-rose-400 hover:bg-rose-950/30 flex items-center gap-2"
+                      className="w-full text-left px-4 py-2 text-xs font-semibold text-rose-400 hover:bg-rose-950/30 flex items-center gap-2 cursor-pointer"
                     >
                       <LogOut className="w-3.5 h-3.5" /> Sign Out
                     </button>
@@ -597,13 +667,42 @@ export default function DashboardPage() {
           )}
 
           {activeTab === "arena" && (
-            <LeaderboardFeature />
+            <LeaderboardFeature
+              onOpenProfile={() => setIsProfileModalOpen(true)}
+              onOpenShare={(mode = "streak") => {
+                setSocialShareMode(mode);
+                setIsSocialShareOpen(true);
+              }}
+            />
           )}
         </div>
       </main>
 
       {/* Global Medal Unlock Celebration Modal */}
-      <MedalCelebrationModal />
+      <MedalCelebrationModal
+        onShare={() => {
+          setSocialShareMode("victory");
+          setIsSocialShareOpen(true);
+        }}
+      />
+
+      {/* Profile & Privacy Settings Modal */}
+      <ProfileSettingsModal
+        isOpen={isProfileModalOpen}
+        onClose={() => setIsProfileModalOpen(false)}
+        onOpenShare={() => {
+          setIsProfileModalOpen(false);
+          setSocialShareMode("kickoff");
+          setIsSocialShareOpen(true);
+        }}
+      />
+
+      {/* Social Media Sharing Modal */}
+      <SocialShareModal
+        isOpen={isSocialShareOpen}
+        onClose={() => setIsSocialShareOpen(false)}
+        defaultMode={socialShareMode}
+      />
     </div>
   );
 }

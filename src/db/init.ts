@@ -36,12 +36,18 @@ export async function initDatabase() {
         email TEXT NOT NULL UNIQUE,
         email_verified TIMESTAMP,
         image TEXT,
+        bio TEXT,
+        is_public BOOLEAN DEFAULT true,
         timezone TEXT DEFAULT 'UTC',
-        preferences JSONB DEFAULT '{"availableMinutesPerDay": 45, "coachingStyle": "compassionate", "primaryCategory": "Software Engineering & Cloud"}'::jsonb,
+        preferences JSONB DEFAULT '{"availableMinutesPerDay": 45, "coachingStyle": "compassionate", "primaryCategory": "Software Engineering & Cloud", "isPublic": true}'::jsonb,
         created_at TIMESTAMP DEFAULT NOW() NOT NULL,
         updated_at TIMESTAMP DEFAULT NOW() NOT NULL
       );
     `;
+
+    // Ensure columns exist on already created tables
+    await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS bio TEXT;`;
+    await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS is_public BOOLEAN DEFAULT true;`;
 
     await sql`
       CREATE TABLE IF NOT EXISTS accounts (

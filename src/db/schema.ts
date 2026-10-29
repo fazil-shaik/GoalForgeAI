@@ -18,17 +18,24 @@ export const users = pgTable("users", {
   email: text("email").notNull().unique(),
   emailVerified: timestamp("email_verified", { mode: "date" }),
   image: text("image"),
+  bio: text("bio"),
+  isPublic: boolean("is_public").default(true).notNull(),
   timezone: text("timezone").default("UTC"),
   preferences: jsonb("preferences").$type<{
     availableMinutesPerDay: number;
     availableDays: string[];
     coachingStyle: "compassionate" | "direct" | "analytical";
     primaryCategory: string;
+    isPublic?: boolean;
+    bio?: string;
+    twitterHandle?: string;
+    linkedinUrl?: string;
   }>().default({
     availableMinutesPerDay: 45,
     availableDays: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"],
     coachingStyle: "compassionate",
     primaryCategory: "Personal Growth & Skills",
+    isPublic: true,
   }),
   createdAt: timestamp("created_at", { mode: "date" }).defaultNow().notNull(),
   updatedAt: timestamp("updated_at", { mode: "date" }).defaultNow().notNull(),

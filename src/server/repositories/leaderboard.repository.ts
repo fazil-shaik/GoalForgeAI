@@ -20,6 +20,7 @@ export interface LeaderboardEntry {
   }>;
   forgeScore: number;
   isCurrentUser: boolean;
+  isPublic?: boolean;
 }
 
 export class LeaderboardRepository {
@@ -123,20 +124,26 @@ export class LeaderboardRepository {
         streak * 40;
 
       const category = (u.preferences as any)?.primaryCategory || "Personal Growth & Skills";
+      const isPublic = u.isPublic ?? (u.preferences as any)?.isPublic ?? true;
+      const isUser = Boolean(currentUserId && u.id === currentUserId);
+      const displayName = isPublic || isUser ? (u.name || "GoalForge Challenger") : "Anonymous Achiever";
+      const displayImage = isPublic || isUser ? (u.image || null) : null;
 
       return {
         rank: 0,
         userId: u.id,
-        name: u.name || "GoalForge Challenger",
-        image: u.image || null,
-        category,
+        name: displayName,
+        image: displayImage,
+        category: isPublic || isUser ? category : "Private Profile",
         totalGoalsCompleted: gStats.total,
         hardGoalsCompleted: gStats.hard,
         currentStreak: streak,
         medalsCount,
         recentMedals: userMedalList.slice(0, 3),
         forgeScore,
-        isCurrentUser: Boolean(currentUserId && u.id === currentUserId),
+        isCurrentUser: isUser,
+        isPublic,
+        isMasked: !isPublic && !isUser,
       };
     });
 

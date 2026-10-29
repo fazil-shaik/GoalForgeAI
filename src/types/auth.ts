@@ -6,6 +6,10 @@ export interface UserPreferences {
   availableDays: string[];
   coachingStyle: CoachingStyle;
   primaryCategory: string;
+  isPublic?: boolean;
+  bio?: string;
+  twitterHandle?: string;
+  linkedinUrl?: string;
 }
 
 export interface UserProfile {
@@ -13,6 +17,8 @@ export interface UserProfile {
   name: string;
   email: string;
   avatarUrl?: string;
+  bio?: string;
+  isPublic?: boolean;
   preferences: UserPreferences;
   createdAt: string;
 }

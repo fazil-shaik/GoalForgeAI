@@ -15,9 +15,14 @@ import {
   Sparkles,
   X,
   ArrowRight,
+  Share2,
 } from "lucide-react";
 
-export function MedalCelebrationModal() {
+interface MedalCelebrationModalProps {
+  onShare?: () => void;
+}
+
+export function MedalCelebrationModal({ onShare }: MedalCelebrationModalProps) {
   const { unlockedCelebrationModal, setUnlockedCelebrationModal } = useGoal();
 
   useEffect(() => {
@@ -146,15 +151,31 @@ export function MedalCelebrationModal() {
           +500 Forge XP • Inscribed in Neon DB Trophy Room
         </div>
 
-        {/* Claim / Dismiss Button */}
-        <button
-          type="button"
-          onClick={() => setUnlockedCelebrationModal(null)}
-          className="w-full mt-6 py-3 px-6 rounded-2xl bg-gradient-to-r from-amber-400 to-yellow-400 text-slate-950 font-black text-sm hover:brightness-110 shadow-lg shadow-amber-500/30 transition-all flex items-center justify-center gap-2 cursor-pointer"
-        >
-          Equip & Honor Achievement
-          <ArrowRight className="w-4 h-4" />
-        </button>
+        {/* Action Buttons: Share & Claim */}
+        <div className="mt-6 flex flex-col sm:flex-row gap-2.5">
+          {onShare && (
+            <button
+              type="button"
+              onClick={() => {
+                setUnlockedCelebrationModal(null);
+                onShare();
+              }}
+              className="flex-1 py-3 px-4 rounded-2xl bg-slate-800/80 hover:bg-slate-700/80 border border-white/10 text-white font-bold text-xs transition-all flex items-center justify-center gap-2 cursor-pointer shadow-md"
+            >
+              <Share2 className="w-4 h-4 text-cyan-400" />
+              Share on X & LinkedIn
+            </button>
+          )}
+
+          <button
+            type="button"
+            onClick={() => setUnlockedCelebrationModal(null)}
+            className="flex-1 py-3 px-4 rounded-2xl bg-gradient-to-r from-amber-400 to-yellow-400 text-slate-950 font-black text-xs hover:brightness-110 shadow-lg shadow-amber-500/30 transition-all flex items-center justify-center gap-2 cursor-pointer"
+          >
+            Equip Medal
+            <ArrowRight className="w-4 h-4" />
+          </button>
+        </div>
       </div>
     </div>
   );
