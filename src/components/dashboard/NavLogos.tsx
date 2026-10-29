@@ -243,3 +243,105 @@ export function LeaderboardLogo({ className = "w-full h-full", isActive = false 
     </div>
   );
 }
+
+/**
+ * 6. User Stats, Analytics & Graphs Logo
+ * Artwork: Cybernetic 3D Liquid Glass Analytics Radar with multi-tier rising histogram bars, glowing polynomial trajectory curve, and apex telemetry node.
+ * Context: Velocity tracking, task completion rates, daily focus pacing, and category distribution graphs.
+ */
+export function AnalyticsStatsLogo({ className = "w-full h-full", isActive = false }: LogoProps) {
+  const id = React.useId();
+  return (
+    <div
+      className={`relative flex items-center justify-center w-full h-full rounded-xl overflow-hidden transition-all duration-300 ${
+        isActive
+          ? "scale-105"
+          : "opacity-85 group-hover:opacity-100 group-hover:scale-105"
+      } ${className}`}
+    >
+      {/* Liquid glass specular sheen overlay */}
+      <span className="pointer-events-none absolute inset-x-0 top-0 h-[48%] bg-gradient-to-b from-white/30 via-white/5 to-transparent z-10 rounded-t-xl" />
+
+      {/* Cybernetic 3D Liquid Glass Analytics & Graph Artwork */}
+      <svg
+        viewBox="0 0 48 48"
+        fill="none"
+        xmlns="http://www.w3.org/2000/svg"
+        className={`w-full h-full p-1.5 transition-all duration-300 ${
+          isActive
+            ? "drop-shadow-[0_0_12px_rgba(6,182,212,0.8)] brightness-115"
+            : "drop-shadow-[0_0_6px_rgba(6,182,212,0.35)] group-hover:drop-shadow-[0_0_10px_rgba(6,182,212,0.6)]"
+        }`}
+      >
+        <defs>
+          <linearGradient id={`${id}-cyan`} x1="6" y1="6" x2="42" y2="42" gradientUnits="userSpaceOnUse">
+            <stop offset="0%" stopColor="#67E8F9" />
+            <stop offset="50%" stopColor="#06B6D4" />
+            <stop offset="100%" stopColor="#0891B2" />
+          </linearGradient>
+          <linearGradient id={`${id}-emerald`} x1="8" y1="12" x2="28" y2="40" gradientUnits="userSpaceOnUse">
+            <stop offset="0%" stopColor="#6EE7B7" />
+            <stop offset="100%" stopColor="#059669" />
+          </linearGradient>
+          <linearGradient id={`${id}-indigo`} x1="20" y1="8" x2="40" y2="40" gradientUnits="userSpaceOnUse">
+            <stop offset="0%" stopColor="#C4B5FD" />
+            <stop offset="100%" stopColor="#6366F1" />
+          </linearGradient>
+          <linearGradient id={`${id}-bar1`} x1="8" y1="26" x2="14" y2="42" gradientUnits="userSpaceOnUse">
+            <stop offset="0%" stopColor="#38BDF8" />
+            <stop offset="100%" stopColor="#0284C7" />
+          </linearGradient>
+          <linearGradient id={`${id}-bar2`} x1="17" y1="18" x2="23" y2="42" gradientUnits="userSpaceOnUse">
+            <stop offset="0%" stopColor="#34D399" />
+            <stop offset="100%" stopColor="#059669" />
+          </linearGradient>
+          <linearGradient id={`${id}-bar3`} x1="26" y1="12" x2="32" y2="42" gradientUnits="userSpaceOnUse">
+            <stop offset="0%" stopColor="#A78BFA" />
+            <stop offset="100%" stopColor="#7C3AED" />
+          </linearGradient>
+          <linearGradient id={`${id}-bar4`} x1="35" y1="6" x2="41" y2="42" gradientUnits="userSpaceOnUse">
+            <stop offset="0%" stopColor="#F472B6" />
+            <stop offset="100%" stopColor="#DB2777" />
+          </linearGradient>
+          <radialGradient id={`${id}-apex-glow`} cx="38" cy="8" r="8" gradientUnits="userSpaceOnUse">
+            <stop offset="0%" stopColor="#FFFFFF" />
+            <stop offset="40%" stopColor="#67E8F9" />
+            <stop offset="100%" stopColor="transparent" />
+          </radialGradient>
+        </defs>
+
+        {/* Ambient Grid Frame */}
+        <rect x="6" y="6" width="36" height="36" rx="8" fill="rgba(15, 23, 42, 0.75)" stroke={`url(#${id}-cyan)`} strokeWidth="1.4" opacity="0.9" />
+        <line x1="6" y1="18" x2="42" y2="18" stroke="rgba(255,255,255,0.08)" strokeDasharray="2 2" />
+        <line x1="6" y1="30" x2="42" y2="30" stroke="rgba(255,255,255,0.08)" strokeDasharray="2 2" />
+
+        {/* Histogram Volume Bars */}
+        <rect x="9" y="27" width="5.5" height="12" rx="2" fill={`url(#${id}-bar1)`} opacity="0.9" />
+        <rect x="17.5" y="20" width="5.5" height="19" rx="2" fill={`url(#${id}-bar2)`} opacity="0.9" />
+        <rect x="26" y="14" width="5.5" height="25" rx="2" fill={`url(#${id}-bar3)`} opacity="0.95" />
+        <rect x="34.5" y="8" width="5.5" height="31" rx="2" fill={`url(#${id}-bar4)`} opacity="0.95" />
+
+        {/* Dynamic Trajectory / Velocity Curve */}
+        <path
+          d="M8 33C14 31 18 24 22 21C26 18 30 11 38 7"
+          stroke="#FFFFFF"
+          strokeWidth="2.4"
+          strokeLinecap="round"
+        />
+        <path
+          d="M8 33C14 31 18 24 22 21C26 18 30 11 38 7"
+          stroke={`url(#${id}-cyan)`}
+          strokeWidth="1.8"
+          strokeLinecap="round"
+        />
+
+        {/* Node Beacons */}
+        <circle cx="11.75" cy="31" r="2" fill="#38BDF8" stroke="#FFFFFF" strokeWidth="1" />
+        <circle cx="20.25" cy="22" r="2" fill="#34D399" stroke="#FFFFFF" strokeWidth="1" />
+        <circle cx="28.75" cy="15" r="2" fill="#A78BFA" stroke="#FFFFFF" strokeWidth="1" />
+        <circle cx="37.5" cy="8" r="3.2" fill={`url(#${id}-apex-glow)`} />
+        <circle cx="37.5" cy="8" r="1.8" fill="#FFFFFF" />
+      </svg>
+    </div>
+  );
+}

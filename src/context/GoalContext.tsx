@@ -15,6 +15,8 @@ import confetti from "canvas-confetti";
 
 interface GoalContextType {
   goals: Goal[];
+  activeGoals: Goal[];
+  completedGoals: Goal[];
   activeGoal: Goal | null;
   milestones: Milestone[];
   tasks: Task[];
@@ -143,16 +145,23 @@ export function GoalProvider({ children }: { children: React.ReactNode }) {
       }
       const data = await res.json();
       const userGoals: Goal[] = data.goals || [];
-
       setGoals(userGoals);
 
-      if (userGoals.length > 0) {
-        const initialGoalId = activeGoalId && userGoals.some((g) => g.id === activeGoalId)
-          ? activeGoalId
-          : userGoals[0].id;
+      const userActiveGoals = userGoals.filter((g) => g.status === "active");
+      if (userActiveGoals.length > 0) {
+        const initialGoalId =
+          activeGoalId && userActiveGoals.some((g) => g.id === activeGoalId)
+            ? activeGoalId
+            : userActiveGoals[0].id;
 
         setActiveGoalIdState(initialGoalId);
         await fetchGoalDetails(initialGoalId);
+      } else {
+        // No active goals (all goals are completed or no goals yet)
+        setActiveGoalIdState("");
+        setMilestones([]);
+        setTasks([]);
+        setRecoveryProposal(null);
       }
     } catch (err) {
       console.error("Error loading goals from Neon DB:", err);
@@ -167,7 +176,9 @@ export function GoalProvider({ children }: { children: React.ReactNode }) {
     refreshMedals();
   }, [loadGoals, refreshStreak, refreshMedals]);
 
-  const activeGoal = goals.find((g) => g.id === activeGoalId) || goals[0] || null;
+  const activeGoals = goals.filter((g) => g.status === "active");
+  const completedGoals = goals.filter((g) => g.status === "completed");
+  const activeGoal = activeGoals.find((g) => g.id === activeGoalId) || activeGoals[0] || null;
 
   const setActiveGoalId = (id: string) => {
     setActiveGoalIdState(id);
@@ -312,6 +323,23 @@ export function GoalProvider({ children }: { children: React.ReactNode }) {
         });
       } catch {
         // safe
+      }
+
+      // Optimistically update goals so the completed goal is marked completed
+      setGoals((prev) =>
+        prev.map((g) => (g.id === goalId ? { ...g, status: "completed" } : g))
+      );
+
+      // Find next remaining active goal
+      const remainingActive = goals.filter((g) => g.id !== goalId && g.status === "active");
+      const nextActiveId = remainingActive.length > 0 ? remainingActive[0].id : "";
+      setActiveGoalIdState(nextActiveId);
+      if (nextActiveId) {
+        await fetchGoalDetails(nextActiveId);
+      } else {
+        setMilestones([]);
+        setTasks([]);
+        setRecoveryProposal(null);
       }
 
       await loadGoals();
@@ -583,6 +611,8 @@ export function GoalProvider({ children }: { children: React.ReactNode }) {
     <GoalContext.Provider
       value={{
         goals,
+        activeGoals,
+        completedGoals,
         activeGoal,
         milestones,
         tasks,

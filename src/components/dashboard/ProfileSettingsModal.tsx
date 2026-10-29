@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { useAuth } from "@/context/AuthContext";
+import { useGoal } from "@/context/GoalContext";
 import { CoachingStyle } from "@/types/auth";
 import {
   X,
@@ -21,12 +22,16 @@ import {
   Flame,
   Save,
   CheckCircle2,
+  Trophy,
+  Target,
+  ExternalLink,
 } from "lucide-react";
 
 interface ProfileSettingsModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onOpenShare?: () => void;
+  onOpenShare?: (mode?: "kickoff" | "streak" | "victory") => void;
+  defaultTab?: "general" | "privacy" | "completed" | "coaching" | "social";
 }
 
 const COMMON_TIMEZONES = [
@@ -59,10 +64,18 @@ export function ProfileSettingsModal({
   isOpen,
   onClose,
   onOpenShare,
+  defaultTab = "general",
 }: ProfileSettingsModalProps) {
   const { user, updateProfile } = useAuth();
+  const { completedGoals, hardGoalsCompletedCount, unlockedMedalsCount } = useGoal();
 
-  const [activeTab, setActiveTab] = useState<"general" | "privacy" | "coaching" | "social">("general");
+  const [activeTab, setActiveTab] = useState<"general" | "privacy" | "completed" | "coaching" | "social">(defaultTab);
+
+  useEffect(() => {
+    if (defaultTab) {
+      setActiveTab(defaultTab);
+    }
+  }, [defaultTab, isOpen]);
 
   // Form State
   const [name, setName] = useState("");
@@ -181,8 +194,8 @@ export function ProfileSettingsModal({
             type="button"
             onClick={() => setActiveTab("general")}
             className={`px-3.5 py-2 text-xs font-semibold rounded-t-xl transition-all border-b-2 flex items-center gap-2 ${activeTab === "general"
-                ? "border-indigo-400 text-indigo-300 bg-indigo-500/10"
-                : "border-transparent text-slate-400 hover:text-slate-200 hover:bg-white/5"
+              ? "border-indigo-400 text-indigo-300 bg-indigo-500/10"
+              : "border-transparent text-slate-400 hover:text-slate-200 hover:bg-white/5"
               }`}
           >
             <User className="w-3.5 h-3.5" /> General
@@ -191,18 +204,29 @@ export function ProfileSettingsModal({
             type="button"
             onClick={() => setActiveTab("privacy")}
             className={`px-3.5 py-2 text-xs font-semibold rounded-t-xl transition-all border-b-2 flex items-center gap-2 ${activeTab === "privacy"
-                ? "border-emerald-400 text-emerald-300 bg-emerald-500/10"
-                : "border-transparent text-slate-400 hover:text-slate-200 hover:bg-white/5"
+              ? "border-emerald-400 text-emerald-300 bg-emerald-500/10"
+              : "border-transparent text-slate-400 hover:text-slate-200 hover:bg-white/5"
               }`}
           >
             <Shield className="w-3.5 h-3.5" /> Privacy & Leaderboard
           </button>
           <button
             type="button"
+            onClick={() => setActiveTab("completed")}
+            className={`px-3.5 py-2 text-xs font-semibold rounded-t-xl transition-all border-b-2 flex items-center gap-2 ${activeTab === "completed"
+              ? "border-amber-400 text-amber-300 bg-amber-500/10"
+              : "border-transparent text-slate-400 hover:text-slate-200 hover:bg-white/5"
+              }`}
+          >
+            <Trophy className="w-3.5 h-3.5 text-amber-400" />
+            Completed Goals ({completedGoals.length})
+          </button>
+          <button
+            type="button"
             onClick={() => setActiveTab("coaching")}
             className={`px-3.5 py-2 text-xs font-semibold rounded-t-xl transition-all border-b-2 flex items-center gap-2 ${activeTab === "coaching"
-                ? "border-amber-400 text-amber-300 bg-amber-500/10"
-                : "border-transparent text-slate-400 hover:text-slate-200 hover:bg-white/5"
+              ? "border-amber-400 text-amber-300 bg-amber-500/10"
+              : "border-transparent text-slate-400 hover:text-slate-200 hover:bg-white/5"
               }`}
           >
             <Brain className="w-3.5 h-3.5" /> Capacity & AI Coach
@@ -211,8 +235,8 @@ export function ProfileSettingsModal({
             type="button"
             onClick={() => setActiveTab("social")}
             className={`px-3.5 py-2 text-xs font-semibold rounded-t-xl transition-all border-b-2 flex items-center gap-2 ${activeTab === "social"
-                ? "border-cyan-400 text-cyan-300 bg-cyan-500/10"
-                : "border-transparent text-slate-400 hover:text-slate-200 hover:bg-white/5"
+              ? "border-cyan-400 text-cyan-300 bg-cyan-500/10"
+              : "border-transparent text-slate-400 hover:text-slate-200 hover:bg-white/5"
               }`}
           >
             <Share2 className="w-3.5 h-3.5" /> Social & Handles
@@ -238,6 +262,27 @@ export function ProfileSettingsModal({
           {/* TAB 1: GENERAL */}
           {activeTab === "general" && (
             <div className="space-y-4">
+              {/* Quick Achievements Snapshot */}
+              <div className="grid grid-cols-3 gap-2.5 p-3 rounded-2xl bg-slate-950/60 border border-white/5">
+                <button
+                  type="button"
+                  onClick={() => setActiveTab("completed")}
+                  className="p-2 rounded-xl bg-slate-900/60 hover:bg-slate-800 text-center transition-colors cursor-pointer border border-white/5"
+                  title="Click to view all completed goals"
+                >
+                  <p className="text-lg font-black text-amber-300 font-mono">{completedGoals.length}</p>
+                  <p className="text-[10px] text-slate-400 font-mono">Conquered Goals</p>
+                </button>
+                <div className="p-2 rounded-xl bg-slate-900/60 text-center border border-white/5">
+                  <p className="text-lg font-black text-indigo-300 font-mono">{hardGoalsCompletedCount}</p>
+                  <p className="text-[10px] text-slate-400 font-mono">Hard Goals</p>
+                </div>
+                <div className="p-2 rounded-xl bg-slate-900/60 text-center border border-white/5">
+                  <p className="text-lg font-black text-yellow-300 font-mono">{unlockedMedalsCount}</p>
+                  <p className="text-[10px] text-slate-400 font-mono">Medals Earned</p>
+                </div>
+              </div>
+
               <div>
                 <label className="block text-xs font-semibold text-slate-300 mb-1.5">
                   Display Name
@@ -310,8 +355,8 @@ export function ProfileSettingsModal({
                   <div className="flex items-center gap-3">
                     <div
                       className={`w-10 h-10 rounded-2xl flex items-center justify-center ${isPublic
-                          ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30"
-                          : "bg-amber-500/20 text-amber-400 border border-amber-500/30"
+                        ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30"
+                        : "bg-amber-500/20 text-amber-400 border border-amber-500/30"
                         }`}
                     >
                       {isPublic ? <Globe className="w-5 h-5" /> : <Lock className="w-5 h-5" />}
@@ -333,8 +378,8 @@ export function ProfileSettingsModal({
                     type="button"
                     onClick={() => setIsPublic(!isPublic)}
                     className={`w-14 h-8 flex items-center rounded-full p-1 transition-colors cursor-pointer border ${isPublic
-                        ? "bg-emerald-600/80 border-emerald-500 justify-end"
-                        : "bg-slate-800 border-slate-700 justify-start"
+                      ? "bg-emerald-600/80 border-emerald-500 justify-end"
+                      : "bg-slate-800 border-slate-700 justify-start"
                       }`}
                   >
                     <div
@@ -350,8 +395,8 @@ export function ProfileSettingsModal({
                 <div
                   onClick={() => setIsPublic(true)}
                   className={`p-4 rounded-2xl border cursor-pointer transition-all ${isPublic
-                      ? "bg-emerald-500/10 border-emerald-500/40 shadow-[0_0_20px_rgba(16,185,129,0.1)]"
-                      : "bg-slate-950/40 border-white/5 hover:border-white/15 opacity-60"
+                    ? "bg-emerald-500/10 border-emerald-500/40 shadow-[0_0_20px_rgba(16,185,129,0.1)]"
+                    : "bg-slate-950/40 border-white/5 hover:border-white/15 opacity-60"
                     }`}
                 >
                   <div className="flex items-center justify-between mb-2">
@@ -383,8 +428,8 @@ export function ProfileSettingsModal({
                 <div
                   onClick={() => setIsPublic(false)}
                   className={`p-4 rounded-2xl border cursor-pointer transition-all ${!isPublic
-                      ? "bg-amber-500/10 border-amber-500/40 shadow-[0_0_20px_rgba(245,158,11,0.1)]"
-                      : "bg-slate-950/40 border-white/5 hover:border-white/15 opacity-60"
+                    ? "bg-amber-500/10 border-amber-500/40 shadow-[0_0_20px_rgba(245,158,11,0.1)]"
+                    : "bg-slate-950/40 border-white/5 hover:border-white/15 opacity-60"
                     }`}
                 >
                   <div className="flex items-center justify-between mb-2">
@@ -416,6 +461,113 @@ export function ProfileSettingsModal({
             </div>
           )}
 
+          {/* TAB: COMPLETED GOALS (HALL OF FAME) */}
+          {activeTab === "completed" && (
+            <div className="space-y-4">
+              <div className="p-4 rounded-2xl bg-gradient-to-r from-amber-500/10 via-slate-900/80 to-slate-950 border border-amber-500/20 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-2xl bg-amber-500/20 border border-amber-500/30 flex items-center justify-center text-amber-400">
+                    <Trophy className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-bold text-white flex items-center gap-2">
+                      Conquered Goals & Hall of Fame
+                      <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                        {completedGoals.length} Conquered
+                      </span>
+                    </h3>
+                    <p className="text-xs text-slate-400">
+                      Completed milestones permanently enshrined on your profile.
+                    </p>
+                  </div>
+                </div>
+
+                {completedGoals.length > 0 && onOpenShare && (
+                  <button
+                    type="button"
+                    onClick={() => onOpenShare("victory")}
+                    className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 text-xs font-semibold border border-amber-500/40 transition-all cursor-pointer"
+                  >
+                    <Share2 className="w-3.5 h-3.5" /> Share Hall of Fame
+                  </button>
+                )}
+              </div>
+
+              {completedGoals.length === 0 ? (
+                <div className="p-8 rounded-2xl bg-slate-950/40 border border-white/5 text-center space-y-3">
+                  <div className="w-12 h-12 rounded-2xl bg-slate-800/80 text-slate-400 mx-auto flex items-center justify-center">
+                    <Target className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-bold text-white">No Completed Goals Yet</h4>
+                    <p className="text-xs text-slate-400 max-w-sm mx-auto mt-1">
+                      Once you finish your roadmap tasks and mark an active goal as completed, it will be retired from your active rotation and showcased here.
+                    </p>
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {completedGoals.map((cg) => {
+                    const isHard = cg.feasibilityRisk === "high_risk";
+                    return (
+                      <div
+                        key={cg.id}
+                        className={`p-4 rounded-2xl border transition-all ${isHard
+                          ? "bg-gradient-to-r from-amber-500/10 via-slate-900/90 to-slate-950 border-amber-500/30 shadow-lg shadow-amber-500/5"
+                          : "bg-slate-950/60 border-white/10 hover:border-white/20"
+                          }`}
+                      >
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="space-y-1">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span className="inline-flex items-center gap-1 text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                                <CheckCircle2 className="w-3 h-3" /> CONQUERED
+                              </span>
+                              {isHard && (
+                                <span className="inline-flex items-center gap-1 text-[10px] font-mono font-black px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30 animate-pulse">
+                                  <Trophy className="w-3 h-3 text-amber-400" /> TITAN HARD GOAL
+                                </span>
+                              )}
+                              <span className="text-[10px] font-mono text-slate-500">
+                                {cg.category}
+                              </span>
+                            </div>
+
+                            <h4 className="text-sm font-bold text-white pt-1">
+                              {cg.title}
+                            </h4>
+
+                            <p className="text-xs text-slate-300 line-clamp-2">
+                              {cg.outcome}
+                            </p>
+                          </div>
+
+                          {onOpenShare && (
+                            <button
+                              type="button"
+                              onClick={() => onOpenShare("victory")}
+                              className="shrink-0 p-2 rounded-xl bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-white border border-white/10 transition-colors cursor-pointer"
+                              title="Share this victory on X and LinkedIn"
+                            >
+                              <Share2 className="w-3.5 h-3.5 text-cyan-400" />
+                            </button>
+                          )}
+                        </div>
+
+                        <div className="mt-3 pt-2.5 border-t border-white/5 flex items-center justify-between text-[11px] font-mono text-slate-400">
+                          <span>Target Date: {cg.deadline}</span>
+                          <span className="text-emerald-400 flex items-center gap-1">
+                            <Sparkles className="w-3 h-3" /> Enshrined in Profile
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          )}
+
           {/* TAB 3: CAPACITY & AI COACH */}
           {activeTab === "coaching" && (
             <div className="space-y-5">
@@ -431,8 +583,8 @@ export function ProfileSettingsModal({
                       type="button"
                       onClick={() => setDailyMinutes(mins)}
                       className={`py-2 rounded-xl text-xs font-mono font-bold transition-all border ${dailyMinutes === mins
-                          ? "bg-indigo-600 border-indigo-400 text-white shadow-lg shadow-indigo-600/30"
-                          : "bg-slate-950/60 border-white/10 text-slate-400 hover:text-white hover:bg-slate-800"
+                        ? "bg-indigo-600 border-indigo-400 text-white shadow-lg shadow-indigo-600/30"
+                        : "bg-slate-950/60 border-white/10 text-slate-400 hover:text-white hover:bg-slate-800"
                         }`}
                     >
                       {mins}m/day
@@ -474,8 +626,8 @@ export function ProfileSettingsModal({
                       key={style.id}
                       onClick={() => setCoachingStyle(style.id as CoachingStyle)}
                       className={`p-3 rounded-2xl border cursor-pointer transition-all ${coachingStyle === style.id
-                          ? "bg-indigo-600/20 border-indigo-400/80 shadow-[0_0_15px_rgba(99,102,241,0.2)]"
-                          : "bg-slate-950/50 border-white/5 hover:border-white/15 opacity-70"
+                        ? "bg-indigo-600/20 border-indigo-400/80 shadow-[0_0_15px_rgba(99,102,241,0.2)]"
+                        : "bg-slate-950/50 border-white/5 hover:border-white/15 opacity-70"
                         }`}
                     >
                       <div className="flex items-center gap-2 mb-1">
@@ -565,8 +717,8 @@ export function ProfileSettingsModal({
                 {onOpenShare && (
                   <button
                     type="button"
-                    onClick={onOpenShare}
-                    className="px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold transition-all shadow-md shadow-indigo-600/30 flex items-center gap-1.5"
+                    onClick={() => onOpenShare("kickoff")}
+                    className="px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold transition-all shadow-md shadow-indigo-600/30 flex items-center gap-1.5 cursor-pointer"
                   >
                     Open Share <Share2 className="w-3 h-3" />
                   </button>

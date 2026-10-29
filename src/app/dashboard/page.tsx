@@ -32,6 +32,7 @@ import {
   Lock,
   Globe,
   Share2,
+  BarChart3,
 } from "lucide-react";
 
 import { GoalBuilderFeature } from "@/components/dashboard/GoalBuilderFeature";
@@ -39,6 +40,7 @@ import { DailyTaskFeature } from "@/components/dashboard/DailyTaskFeature";
 import { RecoveryModeFeature } from "@/components/dashboard/RecoveryModeFeature";
 import { AiCoachFeature } from "@/components/dashboard/AiCoachFeature";
 import { LeaderboardFeature } from "@/components/dashboard/LeaderboardFeature";
+import { AnalyticsFeature } from "@/components/dashboard/AnalyticsFeature";
 import { MedalCelebrationModal } from "@/components/dashboard/MedalCelebrationModal";
 import { ProfileSettingsModal } from "@/components/dashboard/ProfileSettingsModal";
 import { SocialShareModal } from "@/components/dashboard/SocialShareModal";
@@ -48,9 +50,10 @@ import {
   RecoveryModeLogo,
   AiCoachLogo,
   LeaderboardLogo,
+  AnalyticsStatsLogo,
 } from "@/components/dashboard/NavLogos";
 
-export type DashboardTab = "tasks" | "builder" | "recovery" | "coach" | "arena";
+export type DashboardTab = "tasks" | "builder" | "recovery" | "coach" | "arena" | "analytics";
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -58,6 +61,8 @@ export default function DashboardPage() {
   const { user, isAuthenticated, logout } = useAuth();
   const {
     goals,
+    activeGoals,
+    completedGoals,
     activeGoal,
     milestones,
     tasks,
@@ -81,6 +86,7 @@ export default function DashboardPage() {
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const [isSocialShareOpen, setIsSocialShareOpen] = useState(false);
   const [socialShareMode, setSocialShareMode] = useState<"kickoff" | "streak" | "victory">("kickoff");
+  const [profileDefaultTab, setProfileDefaultTab] = useState<"general" | "privacy" | "completed" | "coaching" | "social">("general");
 
   // If checking authentication
   if (sessionStatus === "loading") {
@@ -178,40 +184,79 @@ export default function DashboardPage() {
                 className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-900 border border-slate-700/80 hover:border-slate-600 text-xs font-medium text-slate-200 transition-colors max-w-[240px] truncate"
               >
                 <Target className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
-                <span className="truncate">{activeGoal?.title || "Select Goal"}</span>
+                <span className="truncate">{activeGoal?.title || (activeGoals.length === 0 && completedGoals.length > 0 ? "All Goals Conquered 🎉" : "Select Goal")}</span>
                 <ChevronDown className="w-3.5 h-3.5 text-slate-400 shrink-0" />
               </button>
 
               {isGoalDropdownOpen && (
                 <div className="absolute left-0 mt-2 w-72 rounded-xl bg-slate-900 border border-slate-800 shadow-2xl py-2 z-50 animate-fadeIn">
-                  <div className="px-3 py-1.5 text-[10px] uppercase font-bold text-slate-400 tracking-wider">
-                    Your Active Goals
+                  <div className="px-3 py-1.5 text-[10px] uppercase font-bold text-slate-400 tracking-wider flex items-center justify-between">
+                    <span>Active Goals ({activeGoals.length})</span>
+                    {activeGoals.length > 0 && (
+                      <span className="text-emerald-400 font-mono text-[9px] font-normal">In Progress</span>
+                    )}
                   </div>
-                  {goals.map((g) => (
-                    <button
-                      key={g.id}
-                      onClick={() => {
-                        setActiveGoalId(g.id);
-                        setIsGoalDropdownOpen(false);
-                      }}
-                      className={`w-full text-left px-3 py-2 text-xs flex items-center justify-between transition-colors ${g.id === activeGoal?.id
-                        ? "bg-indigo-600/20 text-indigo-300 font-semibold"
-                        : "text-slate-300 hover:bg-slate-800"
+
+                  {activeGoals.length === 0 ? (
+                    <div className="px-3 py-3 text-center space-y-1">
+                      <p className="text-xs font-bold text-slate-200">No Active Goals</p>
+                      <p className="text-[11px] text-slate-400">
+                        {completedGoals.length > 0
+                          ? "All goals completed & moved to profile!"
+                          : "Start your journey by creating a goal below."}
+                      </p>
+                    </div>
+                  ) : (
+                    activeGoals.map((g) => (
+                      <button
+                        key={g.id}
+                        onClick={() => {
+                          setActiveGoalId(g.id);
+                          setIsGoalDropdownOpen(false);
+                        }}
+                        className={`w-full text-left px-3 py-2 text-xs flex items-center justify-between transition-colors ${
+                          g.id === activeGoal?.id
+                            ? "bg-indigo-600/20 text-indigo-300 font-semibold"
+                            : "text-slate-300 hover:bg-slate-800"
                         }`}
-                    >
-                      <span className="truncate">{g.title}</span>
-                      <span className="text-[10px] text-slate-500 font-mono ml-2 shrink-0">
-                        {g.category.split(" ")[0]}
-                      </span>
-                    </button>
-                  ))}
-                  <div className="border-t border-slate-800 mt-2 pt-1 px-2">
+                      >
+                        <span className="truncate">{g.title}</span>
+                        <span className="text-[10px] text-slate-500 font-mono ml-2 shrink-0">
+                          {g.category.split(" ")[0]}
+                        </span>
+                      </button>
+                    ))
+                  )}
+
+                  {/* Completed Goals link in dropdown */}
+                  {completedGoals.length > 0 && (
+                    <div className="border-t border-slate-800 mt-2 pt-1.5 px-2">
+                      <button
+                        onClick={() => {
+                          setProfileDefaultTab("completed");
+                          setIsProfileModalOpen(true);
+                          setIsGoalDropdownOpen(false);
+                        }}
+                        className="w-full text-left px-2 py-1.5 rounded-lg text-xs font-semibold text-amber-400 hover:bg-slate-800 flex items-center justify-between transition-colors cursor-pointer"
+                      >
+                        <span className="flex items-center gap-1.5">
+                          <Trophy className="w-3.5 h-3.5 text-amber-400" />
+                          View Conquered Goals
+                        </span>
+                        <span className="text-[10px] font-mono px-1.5 py-0.5 rounded-full bg-amber-500/20 text-amber-300">
+                          {completedGoals.length}
+                        </span>
+                      </button>
+                    </div>
+                  )}
+
+                  <div className="border-t border-slate-800 mt-1.5 pt-1 px-2">
                     <button
                       onClick={() => {
                         setActiveTab("builder");
                         setIsGoalDropdownOpen(false);
                       }}
-                      className="w-full text-left px-2 py-1.5 rounded-lg text-xs font-semibold text-emerald-400 hover:bg-slate-800 flex items-center gap-1.5"
+                      className="w-full text-left px-2 py-1.5 rounded-lg text-xs font-semibold text-emerald-400 hover:bg-slate-800 flex items-center gap-1.5 cursor-pointer"
                     >
                       <Plus className="w-3.5 h-3.5" /> Create New Goal with AI
                     </button>
@@ -222,7 +267,7 @@ export default function DashboardPage() {
           </div>
 
           {/* Right Header Navigation & User Profile */}
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3">
             {/* Quick Recovery Alert Banner */}
             {hasPendingRecovery && (
               <button
@@ -233,6 +278,21 @@ export default function DashboardPage() {
                 <span>{overdueTasks.length} Overdue • Goal Recovery Ready</span>
               </button>
             )}
+
+            {/* Quick Analytics Graph Feature Button in Navbar */}
+            <button
+              type="button"
+              onClick={() => setActiveTab("analytics")}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full border transition-all cursor-pointer backdrop-blur-md ${
+                activeTab === "analytics"
+                  ? "bg-cyan-500/20 border-cyan-400 text-cyan-300 shadow-[0_0_15px_rgba(6,182,212,0.35)]"
+                  : "bg-slate-900/80 border-white/10 text-slate-300 hover:text-white hover:bg-slate-800"
+              }`}
+              title="User Stats & Analytics Graphs"
+            >
+              <BarChart3 className="w-3.5 h-3.5 text-cyan-400" />
+              <span className="text-xs font-mono font-bold hidden md:inline">Analytics</span>
+            </button>
 
             {/* Daily Streak Counter Pill */}
             <button
@@ -566,6 +626,42 @@ export default function DashboardPage() {
                   <span className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-2 h-1 rounded-full bg-amber-400 shadow-sm shadow-amber-400" />
                 )}
               </div>
+
+              {/* 6. User Stats, Analytics & Graphs Logo Tab */}
+              <div className="relative group">
+                <button
+                  type="button"
+                  role="tab"
+                  aria-selected={activeTab === "analytics"}
+                  aria-label="User Stats, Graphs and Velocity Analytics"
+                  onClick={() => setActiveTab("analytics")}
+                  className={`liquid-glass-item relative flex items-center justify-center w-14 h-14 sm:w-16 sm:h-16 p-1.5 rounded-2xl cursor-pointer transition-all duration-300 ${
+                    activeTab === "analytics"
+                      ? "liquid-glass-item-active-analytics scale-105 shadow-[0_0_20px_rgba(6,182,212,0.5)] border-cyan-400/80 bg-cyan-500/20"
+                      : ""
+                  }`}
+                >
+                  <AnalyticsStatsLogo className="w-full h-full" isActive={activeTab === "analytics"} />
+                </button>
+
+                {/* Micro-Tooltip with context */}
+                <div className="absolute left-1/2 -translate-x-1/2 top-full mt-3 z-50 pointer-events-none opacity-0 group-hover:opacity-100 translate-y-1 group-hover:translate-y-0 transition-all duration-200">
+                  <div className="px-3.5 py-1.5 rounded-xl bg-slate-900/95 border border-white/10 shadow-2xl text-center whitespace-nowrap backdrop-blur-xl">
+                    <p className="text-xs font-bold text-white flex items-center gap-1.5 justify-center">
+                      <span className="w-1.5 h-1.5 rounded-full bg-cyan-400" />
+                      User Stats & Graphs
+                    </p>
+                    <p className="text-[10px] text-cyan-300/90 font-mono">
+                      Telemetry, pacing & velocity graphs
+                    </p>
+                  </div>
+                </div>
+
+                {/* Active indicator dot beneath */}
+                {activeTab === "analytics" && (
+                  <span className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-2 h-1 rounded-full bg-cyan-400 shadow-sm shadow-cyan-400" />
+                )}
+              </div>
             </nav>
           </div>
         </div>
@@ -647,6 +743,48 @@ export default function DashboardPage() {
           </div>
         )}
 
+        {/* Celebratory Banner when All Active Goals Are Completed */}
+        {!activeGoal && (
+          <div className="bg-gradient-to-r from-indigo-950/50 via-slate-900 to-emerald-950/40 rounded-2xl border border-white/10 p-6 mb-6 backdrop-blur-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="space-y-1">
+              <span className="inline-flex items-center gap-1.5 text-xs font-mono font-bold px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
+                <Sparkles className="w-3.5 h-3.5" /> All Active Goals Completed
+              </span>
+              <h2 className="text-xl font-bold text-white">
+                {completedGoals.length > 0
+                  ? `Outstanding Execution! You've conquered ${completedGoals.length} goals.`
+                  : "Welcome to GoalForge AI! Ready to forge your first goal?"}
+              </h2>
+              <p className="text-xs text-slate-400">
+                {completedGoals.length > 0
+                  ? "Your completed goals are safely recorded in your profile. Forge a new ambitious target with AI roadmap decomposition."
+                  : "Let Gemini AI synthesize a capacity-paced milestone roadmap for your ambitious goals."}
+              </p>
+            </div>
+            <div className="flex items-center gap-2.5 shrink-0">
+              {completedGoals.length > 0 && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setProfileDefaultTab("completed");
+                    setIsProfileModalOpen(true);
+                  }}
+                  className="px-4 py-2 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5"
+                >
+                  <Trophy className="w-3.5 h-3.5" /> View Conquered Goals ({completedGoals.length})
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={() => setActiveTab("builder")}
+                className="px-4 py-2 rounded-xl bg-gradient-to-r from-indigo-600 to-emerald-500 text-white font-bold text-xs hover:brightness-110 shadow-lg shadow-indigo-500/20 transition-all cursor-pointer flex items-center gap-1.5"
+              >
+                <Plus className="w-3.5 h-3.5" /> Forge New Goal with AI
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* Feature Tab Contents - Mounted based on activeTab */}
         <div id="feature-container" className="space-y-6">
           {/* Shell Placeholder / Feature Router */}
@@ -675,6 +813,16 @@ export default function DashboardPage() {
               }}
             />
           )}
+
+          {activeTab === "analytics" && (
+            <AnalyticsFeature
+              onOpenShare={(mode = "streak") => {
+                setSocialShareMode(mode);
+                setIsSocialShareOpen(true);
+              }}
+              onNavigateToBuilder={() => setActiveTab("builder")}
+            />
+          )}
         </div>
       </main>
 
@@ -690,9 +838,10 @@ export default function DashboardPage() {
       <ProfileSettingsModal
         isOpen={isProfileModalOpen}
         onClose={() => setIsProfileModalOpen(false)}
+        defaultTab={profileDefaultTab}
         onOpenShare={() => {
           setIsProfileModalOpen(false);
-          setSocialShareMode("kickoff");
+          setSocialShareMode("victory");
           setIsSocialShareOpen(true);
         }}
       />
