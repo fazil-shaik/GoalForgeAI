@@ -285,14 +285,14 @@ export default function DashboardPage() {
                   aria-selected={activeTab === "tasks"}
                   aria-label="Daily Tasks and Execution Hub"
                   onClick={() => setActiveTab("tasks")}
-                  className={`liquid-glass-item relative flex items-center justify-center w-14 h-14 rounded-2xl cursor-pointer ${activeTab === "tasks" ? "liquid-glass-item-active-tasks" : ""
+                  className={`liquid-glass-item relative flex items-center justify-center w-14 h-14 sm:w-16 sm:h-16 p-1.5 rounded-2xl cursor-pointer transition-all duration-300 ${activeTab === "tasks" ? "liquid-glass-item-active-tasks scale-105 shadow-[0_0_20px_rgba(16,185,129,0.5)]" : ""
                     }`}
                 >
-                  <DailyTasksLogo className="w-7 h-7" isActive={activeTab === "tasks"} />
+                  <DailyTasksLogo className="w-full h-full" isActive={activeTab === "tasks"} />
 
                   {/* Dynamic Badge for today's tasks */}
                   {todayTasks.length > 0 && (
-                    <span className="absolute -top-1 -right-1 px-1.5 py-0.5 rounded-full bg-emerald-500 text-slate-950 text-[10px] font-black font-mono shadow-lg shadow-emerald-500/50 border-2 border-slate-950 animate-pulse">
+                    <span className="absolute -top-1 -right-1 px-1.5 py-0.5 rounded-full bg-emerald-500 text-slate-950 text-[10px] font-black font-mono shadow-lg shadow-emerald-500/50 border-2 border-slate-950 animate-pulse z-20">
                       {todayTasks.length}
                     </span>
                   )}
@@ -325,10 +325,10 @@ export default function DashboardPage() {
                   aria-selected={activeTab === "builder"}
                   aria-label="AI Goal and Roadmap Builder"
                   onClick={() => setActiveTab("builder")}
-                  className={`liquid-glass-item relative flex items-center justify-center w-14 h-14 rounded-2xl cursor-pointer ${activeTab === "builder" ? "liquid-glass-item-active-builder" : ""
+                  className={`liquid-glass-item relative flex items-center justify-center w-14 h-14 sm:w-16 sm:h-16 p-1.5 rounded-2xl cursor-pointer transition-all duration-300 ${activeTab === "builder" ? "liquid-glass-item-active-builder scale-105 shadow-[0_0_20px_rgba(99,102,241,0.5)]" : ""
                     }`}
                 >
-                  <RoadmapBuilderLogo className="w-7 h-7" isActive={activeTab === "builder"} />
+                  <RoadmapBuilderLogo className="w-full h-full" isActive={activeTab === "builder"} />
                 </button>
 
                 {/* Micro-Tooltip with context */}
@@ -358,14 +358,14 @@ export default function DashboardPage() {
                   aria-selected={activeTab === "recovery"}
                   aria-label="Goal Recovery Mode"
                   onClick={() => setActiveTab("recovery")}
-                  className={`liquid-glass-item relative flex items-center justify-center w-14 h-14 rounded-2xl cursor-pointer ${activeTab === "recovery" ? "liquid-glass-item-active-recovery" : ""
+                  className={`liquid-glass-item relative flex items-center justify-center w-14 h-14 sm:w-16 sm:h-16 p-1.5 rounded-2xl cursor-pointer transition-all duration-300 ${activeTab === "recovery" ? "liquid-glass-item-active-recovery scale-105 shadow-[0_0_20px_rgba(245,158,11,0.5)]" : ""
                     }`}
                 >
-                  <RecoveryModeLogo className="w-7 h-7" isActive={activeTab === "recovery"} />
+                  <RecoveryModeLogo className="w-full h-full" isActive={activeTab === "recovery"} />
 
                   {/* Overdue Slippage Alert Badge */}
                   {overdueTasks.length > 0 && (
-                    <span className="absolute -top-1 -right-1 px-1.5 py-0.5 rounded-full bg-amber-500 text-slate-950 text-[10px] font-black font-mono shadow-lg shadow-amber-500/50 border-2 border-slate-950 animate-bounce">
+                    <span className="absolute -top-1 -right-1 px-1.5 py-0.5 rounded-full bg-amber-500 text-slate-950 text-[10px] font-black font-mono shadow-lg shadow-amber-500/50 border-2 border-slate-950 animate-bounce z-20">
                       {overdueTasks.length}
                     </span>
                   )}
@@ -398,10 +398,10 @@ export default function DashboardPage() {
                   aria-selected={activeTab === "coach"}
                   aria-label="AI Coach and Feasibility Insights"
                   onClick={() => setActiveTab("coach")}
-                  className={`liquid-glass-item relative flex items-center justify-center w-14 h-14 rounded-2xl cursor-pointer ${activeTab === "coach" ? "liquid-glass-item-active-coach" : ""
+                  className={`liquid-glass-item relative flex items-center justify-center w-14 h-14 sm:w-16 sm:h-16 p-1.5 rounded-2xl cursor-pointer transition-all duration-300 ${activeTab === "coach" ? "liquid-glass-item-active-coach scale-105 shadow-[0_0_20px_rgba(20,184,166,0.5)]" : ""
                     }`}
                 >
-                  <AiCoachLogo className="w-7 h-7" isActive={activeTab === "coach"} />
+                  <AiCoachLogo className="w-full h-full" isActive={activeTab === "coach"} />
                 </button>
 
                 {/* Micro-Tooltip with context */}
