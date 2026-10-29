@@ -81,8 +81,8 @@ export function GoalProvider({ children }: { children: React.ReactNode }) {
         const data = await res.json();
         if (data.streak) setStreak(data.streak);
       }
-    } catch (err) {
-      console.warn("Notice loading streak (non-fatal):", err);
+    } catch {
+      // safe fallback
     }
   }, []);
 
@@ -97,8 +97,8 @@ export function GoalProvider({ children }: { children: React.ReactNode }) {
           setHardGoalsCompletedCount(data.hardGoalsCount || 0);
         }
       }
-    } catch (err) {
-      console.warn("Notice loading medals (non-fatal):", err);
+    } catch {
+      // safe fallback
     }
   }, []);
 
@@ -129,8 +129,8 @@ export function GoalProvider({ children }: { children: React.ReactNode }) {
           ]);
         }
       }
-    } catch (err) {
-      console.error("Error fetching goal details from Neon DB:", err);
+    } catch {
+      // safe fallback
     }
   }, []);
 
@@ -163,8 +163,8 @@ export function GoalProvider({ children }: { children: React.ReactNode }) {
         setTasks([]);
         setRecoveryProposal(null);
       }
-    } catch (err) {
-      console.error("Error loading goals from Neon DB:", err);
+    } catch {
+      // safe fallback
     } finally {
       setIsLoading(false);
     }
@@ -213,7 +213,7 @@ export function GoalProvider({ children }: { children: React.ReactNode }) {
       });
 
       if (!res.ok) {
-        throw new Error("Failed to save goal to Neon DB");
+        throw new Error("Failed to save goal");
       }
 
       const result = await res.json();
@@ -243,8 +243,7 @@ export function GoalProvider({ children }: { children: React.ReactNode }) {
       }
 
       return newGoalId;
-    } catch (err) {
-      console.error("Error creating goal with roadmap:", err);
+    } catch {
       return null;
     }
   };
@@ -300,8 +299,8 @@ export function GoalProvider({ children }: { children: React.ReactNode }) {
           refreshMedals();
         }
       }
-    } catch (err) {
-      console.error("Error completing task in Neon DB:", err);
+    } catch {
+      // safe fallback
     }
   };
 
@@ -375,8 +374,7 @@ export function GoalProvider({ children }: { children: React.ReactNode }) {
         isHardGoal: data.isHardGoal || false,
         newlyUnlockedMedals: data.newlyUnlockedMedals || [],
       };
-    } catch (err) {
-      console.error("Error completing goal in Neon DB:", err);
+    } catch {
       return { success: false, isHardGoal: false, newlyUnlockedMedals: [] };
     }
   };
@@ -402,8 +400,8 @@ export function GoalProvider({ children }: { children: React.ReactNode }) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ reason }),
       });
-    } catch (err) {
-      console.error("Error skipping task in Neon DB:", err);
+    } catch {
+      // safe fallback
     }
   };
 
@@ -421,15 +419,15 @@ export function GoalProvider({ children }: { children: React.ReactNode }) {
       )
     );
 
-    // Persist to Neon DB
+    // Persist to database
     try {
       await fetch(`/api/tasks/${taskId}/reschedule`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ dueDate: newDate }),
       });
-    } catch (err) {
-      console.error("Error rescheduling task in Neon DB:", err);
+    } catch {
+      // safe fallback
     }
   };
 
@@ -453,8 +451,8 @@ export function GoalProvider({ children }: { children: React.ReactNode }) {
           setTasks((prev) => [result.task, ...prev]);
         }
       }
-    } catch (err) {
-      console.error("Error adding task to Neon DB:", err);
+    } catch {
+      // safe fallback
     }
   };
 
@@ -465,8 +463,8 @@ export function GoalProvider({ children }: { children: React.ReactNode }) {
       await fetch(`/api/tasks/${taskId}`, {
         method: "DELETE",
       });
-    } catch (err) {
-      console.error("Error deleting task from Neon DB:", err);
+    } catch {
+      // safe fallback
     }
   };
 
@@ -492,8 +490,8 @@ export function GoalProvider({ children }: { children: React.ReactNode }) {
           setRecoveryProposal(data.proposal);
         }
       }
-    } catch (err) {
-      console.error("Error generating Gemini AI recovery plan:", err);
+    } catch {
+      // safe fallback
     }
   };
 
@@ -534,7 +532,7 @@ export function GoalProvider({ children }: { children: React.ReactNode }) {
       // safe
     }
 
-    // 2. Persist to Neon DB
+    // 2. Persist to database
     try {
       await fetch(`/api/proposals/${recoveryProposal.id}/approve`, {
         method: "POST",
@@ -544,8 +542,8 @@ export function GoalProvider({ children }: { children: React.ReactNode }) {
       if (activeGoal) {
         await fetchGoalDetails(activeGoal.id);
       }
-    } catch (err) {
-      console.error("Error accepting recovery proposal in Neon DB:", err);
+    } catch {
+      // safe fallback
     }
   };
 
@@ -559,8 +557,8 @@ export function GoalProvider({ children }: { children: React.ReactNode }) {
       await fetch(`/api/proposals/${proposalId}/dismiss`, {
         method: "POST",
       });
-    } catch (err) {
-      console.error("Error dismissing recovery proposal:", err);
+    } catch {
+      // safe fallback
     }
   };
 
@@ -596,8 +594,8 @@ export function GoalProvider({ children }: { children: React.ReactNode }) {
           setCoachMessages((prev) => [data.coachMessage, ...prev]);
         }
       }
-    } catch (err) {
-      console.error("Error communicating with Gemini AI coach:", err);
+    } catch {
+      // safe fallback
     }
   };
 

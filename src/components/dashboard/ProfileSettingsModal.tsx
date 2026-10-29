@@ -140,7 +140,7 @@ export function ProfileSettingsModal({
         setSaveSuccess(true);
         setTimeout(() => setSaveSuccess(false), 3000);
       } else {
-        setErrorMessage("Failed to save changes to Neon DB. Please try again.");
+        setErrorMessage("Failed to save changes. Please try again.");
       }
     } catch (err: any) {
       setErrorMessage(err.message || "An unexpected error occurred.");
@@ -255,7 +255,7 @@ export function ProfileSettingsModal({
           {saveSuccess && (
             <div className="p-3.5 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-xs flex items-center gap-2">
               <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-400" />
-              <span>Profile updated successfully in Neon DB!</span>
+              <span>Profile updated successfully!</span>
             </div>
           )}
 
@@ -747,7 +747,7 @@ export function ProfileSettingsModal({
             {isSaving ? (
               <>
                 <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                Saving to Neon DB...
+                Saving changes...
               </>
             ) : (
               <>

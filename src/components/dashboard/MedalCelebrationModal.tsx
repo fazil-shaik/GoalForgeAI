@@ -148,7 +148,7 @@ export function MedalCelebrationModal({ onShare }: MedalCelebrationModalProps) {
         {/* XP Bonus */}
         <div className="mt-5 py-2.5 px-4 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-xs font-mono font-bold text-amber-400 flex items-center justify-center gap-2">
           <Sparkles className="w-4 h-4" />
-          +500 Forge XP • Inscribed in Neon DB Trophy Room
+          +500 Forge XP • Inscribed in Trophy Room
         </div>
 
         {/* Action Buttons: Share & Claim */}

@@ -64,8 +64,8 @@ export function LeaderboardFeature({
         const data = await res.json();
         setLeaderboardData(data.leaderboard || []);
       }
-    } catch (err) {
-      console.error("Error fetching leaderboard from Neon DB:", err);
+    } catch {
+      // safe fallback
     } finally {
       setIsLoadingLeaderboard(false);
     }
@@ -103,8 +103,8 @@ export function LeaderboardFeature({
       await fetchLeaderboard(sortBy);
       await refreshStreak();
       await refreshMedals();
-    } catch (err) {
-      console.error("Error completing goal:", err);
+    } catch {
+      // safe fallback
     } finally {
       setIsCompletingGoal(false);
     }
@@ -191,7 +191,7 @@ export function LeaderboardFeature({
           <div className="space-y-2">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-400 text-xs font-mono font-bold tracking-wider uppercase">
               <Trophy className="w-3.5 h-3.5 text-amber-400 animate-pulse" />
-              GoalForge Arena • Live Neon DB
+              GoalForge Arena • Live Global Standings
             </div>
             <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight flex items-center gap-3">
               Championship & Medals

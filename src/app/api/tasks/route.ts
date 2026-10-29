@@ -77,7 +77,7 @@ export async function POST(req: Request) {
 
     return NextResponse.json({ success: true, task: formattedTask }, { status: 201 });
   } catch (err: any) {
-    console.error("Error creating task in Neon DB:", err);
+    console.error("[Tasks API] Error creating task:", err);
     return NextResponse.json(
       { error: err?.message || "Failed to create task" },
       { status: 500 }

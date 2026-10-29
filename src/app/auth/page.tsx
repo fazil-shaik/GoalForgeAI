@@ -154,13 +154,13 @@ function AuthContent() {
                 <span>Single-Click Verified OAuth 2.0</span>
               </div>
               <p className="text-slate-500 text-[10px] leading-relaxed">
-                Your profile, email, and preferences will be securely saved into Neon PostgreSQL database via Drizzle ORM.
+                Your profile, email, and preferences are securely encrypted and saved with your verified account.
               </p>
             </div>
           </div>
 
           <div className="pt-2 border-t border-slate-800/80 text-center text-[10px] text-slate-500 space-y-1">
-            <p>Protected by NextAuth Google OAuth & Drizzle Database Session Guards.</p>
+            <p>Protected by Google OAuth & Secure Session Authentication.</p>
             <p>Without authentication, access to the dashboard is strictly forbidden.</p>
           </div>
         </div>

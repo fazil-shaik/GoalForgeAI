@@ -138,7 +138,7 @@ export function AnalyticsFeature({
               User Stats & Execution Graphs
             </h1>
             <p className="text-sm text-slate-300 max-w-xl">
-              Live telemetry aggregated from Neon PostgreSQL: execution velocity, focus pacing, hard goal conquests, and habit sustainability.
+              Real-time execution telemetry: velocity tracking, focus pacing, hard goal conquests, and habit sustainability.
             </p>
           </div>
 

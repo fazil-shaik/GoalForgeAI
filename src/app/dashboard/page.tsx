@@ -415,7 +415,7 @@ export default function DashboardPage() {
                       <ShieldCheck className="w-3.5 h-3.5" /> Google OAuth Verified
                     </p>
                     <p className="text-[10px] text-slate-500">
-                      Synced with Neon PostgreSQL database.
+                      Synced and verified with your GoalForge account.
                     </p>
                   </div>
 

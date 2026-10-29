@@ -56,8 +56,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           });
         }
       }
-    } catch (err) {
-      console.warn("Notice loading profile (non-fatal):", err);
+    } catch {
+      // safe fallback
     }
   }, [isAuthenticated]);
 
@@ -122,8 +122,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }));
       }
       return true;
-    } catch (err) {
-      console.error("Error updating profile in Neon DB:", err);
+    } catch {
       return false;
     }
   };

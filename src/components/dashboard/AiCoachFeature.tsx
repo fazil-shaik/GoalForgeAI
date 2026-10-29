@@ -66,8 +66,8 @@ export function AiCoachFeature({
 
     try {
       await sendCoachMessage(question);
-    } catch (err) {
-      console.error("Error sending message to coach:", err);
+    } catch {
+      // safe fallback
     } finally {
       setIsThinking(false);
     }

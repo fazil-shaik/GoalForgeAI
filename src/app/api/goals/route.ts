@@ -68,7 +68,7 @@ export async function POST(req: Request) {
 
     return NextResponse.json({ success: true, ...result }, { status: 201 });
   } catch (error: any) {
-    console.error("Error creating goal in Neon DB:", error);
+    console.error("[Goals API] Error creating goal:", error);
     return NextResponse.json(
       { error: error?.message || "Failed to create goal" },
       { status: 500 }

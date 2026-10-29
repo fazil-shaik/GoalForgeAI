@@ -57,8 +57,8 @@ export class LeaderboardRepository {
         })
         .from(goals)
         .where(eq(goals.status, "completed"));
-    } catch (err) {
-      console.warn("[LeaderboardRepository] Notice fetching completed goals:", err);
+    } catch {
+      // safe fallback
     }
 
     // 4. Fetch all medals
@@ -74,16 +74,16 @@ export class LeaderboardRepository {
         })
         .from(userMedals)
         .orderBy(desc(userMedals.unlockedAt));
-    } catch (err) {
-      console.warn("[LeaderboardRepository] Notice fetching medals (re-ensuring table):", err);
+    } catch {
+      // safe fallback
     }
 
     // 5. Fetch all streaks
     let allStreaks: any[] = [];
     try {
       allStreaks = await db.select().from(userStreaks);
-    } catch (err) {
-      console.warn("[LeaderboardRepository] Notice fetching streaks:", err);
+    } catch {
+      // safe fallback
     }
 
     // Map streak by userId

@@ -77,8 +77,7 @@ export class MedalRepository {
         .from(userMedals)
         .where(eq(userMedals.userId, userId))
         .orderBy(desc(userMedals.unlockedAt));
-    } catch (err) {
-      console.warn("[MedalRepository] Notice listing medals:", err);
+    } catch {
       return [];
     }
   }

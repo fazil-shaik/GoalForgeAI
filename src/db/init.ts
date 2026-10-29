@@ -10,9 +10,8 @@ let initPromise: Promise<boolean> | null = null;
 
 export async function ensureDatabaseInitialized(): Promise<boolean> {
   if (!initPromise) {
-    initPromise = initDatabase().catch((err) => {
+    initPromise = initDatabase().catch(() => {
       initPromise = null;
-      console.error("[DB Init] Initialization error:", err);
       return false;
     });
   }
@@ -22,13 +21,10 @@ export async function ensureDatabaseInitialized(): Promise<boolean> {
 export async function initDatabase() {
   const sql = getSql();
   if (!sql) {
-    console.warn("[DB Init] No DATABASE_URL found.");
     return false;
   }
 
   try {
-    console.log("[DB Init] Ensuring all GoalForge PRD tables exist in Neon PostgreSQL...");
-
     await sql`
       CREATE TABLE IF NOT EXISTS users (
         id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -213,13 +209,11 @@ export async function initDatabase() {
       );
     `;
 
-    // Ensure community leaderboard cohort exists in Neon DB
+    // Ensure community leaderboard cohort exists in database
     await seedCommunityLeaderboard(sql);
 
-    console.log("✅ [DB Init] All PRD tables successfully verified & active in Neon PostgreSQL!");
     return true;
   } catch (err) {
-    console.error("❌ [DB Init] Error verifying tables in database:", err);
     return false;
   }
 }
@@ -234,8 +228,6 @@ async function seedCommunityLeaderboard(sql: any) {
     if (existingUsers[0]?.count >= 4) {
       return; // Already populated
     }
-
-    console.log("[DB Init] Seeding community leaderboard champions in Neon DB...");
 
     const cohort = [
       {
@@ -351,9 +343,7 @@ async function seedCommunityLeaderboard(sql: any) {
         }
       }
     }
-
-    console.log("✅ [DB Init] Community leaderboard champions successfully seeded!");
-  } catch (err) {
-    console.warn("[DB Init] Notice seeding community users (non-fatal):", err);
+  } catch {
+    // Non-fatal fallback
   }
 }

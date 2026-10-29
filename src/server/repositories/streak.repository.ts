@@ -141,8 +141,8 @@ export class StreakRepository {
           })
           .where(eq(userStreaks.userId, userId));
       }
-    } catch (err) {
-      console.warn("[StreakRepository] Non-fatal upsert sync error:", err);
+    } catch {
+      // safe fallback
     }
 
     return {

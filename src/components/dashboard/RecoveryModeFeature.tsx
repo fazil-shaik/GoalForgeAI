@@ -52,8 +52,8 @@ export function RecoveryModeFeature({
     const reason = customReason.trim() || selectedReason;
     try {
       await generateRecoveryPlan(reason);
-    } catch (err) {
-      console.error("Error generating recovery proposal:", err);
+    } catch {
+      // safe fallback
     } finally {
       setIsGenerating(false);
     }
