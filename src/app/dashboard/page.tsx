@@ -34,6 +34,12 @@ import { GoalBuilderFeature } from "@/components/dashboard/GoalBuilderFeature";
 import { DailyTaskFeature } from "@/components/dashboard/DailyTaskFeature";
 import { RecoveryModeFeature } from "@/components/dashboard/RecoveryModeFeature";
 import { AiCoachFeature } from "@/components/dashboard/AiCoachFeature";
+import {
+  DailyTasksLogo,
+  RoadmapBuilderLogo,
+  RecoveryModeLogo,
+  AiCoachLogo,
+} from "@/components/dashboard/NavLogos";
 
 export type DashboardTab = "tasks" | "builder" | "recovery" | "coach";
 
@@ -115,22 +121,22 @@ export default function DashboardPage() {
     activeGoal?.feasibilityRisk === "low_risk"
       ? "Low Risk"
       : activeGoal?.feasibilityRisk === "high_risk"
-      ? "High Risk"
-      : "Moderate Risk";
+        ? "High Risk"
+        : "Moderate Risk";
 
   const riskColor =
     activeGoal?.feasibilityRisk === "low_risk"
       ? "text-emerald-300"
       : activeGoal?.feasibilityRisk === "high_risk"
-      ? "text-rose-300"
-      : "text-amber-300";
+        ? "text-rose-300"
+        : "text-amber-300";
 
   const riskPingColor =
     activeGoal?.feasibilityRisk === "low_risk"
       ? "bg-emerald-400"
       : activeGoal?.feasibilityRisk === "high_risk"
-      ? "bg-rose-500"
-      : "bg-amber-400";
+        ? "bg-rose-500"
+        : "bg-amber-400";
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col selection:bg-indigo-500 selection:text-white">
@@ -172,11 +178,10 @@ export default function DashboardPage() {
                         setActiveGoalId(g.id);
                         setIsGoalDropdownOpen(false);
                       }}
-                      className={`w-full text-left px-3 py-2 text-xs flex items-center justify-between transition-colors ${
-                        g.id === activeGoal?.id
-                          ? "bg-indigo-600/20 text-indigo-300 font-semibold"
-                          : "text-slate-300 hover:bg-slate-800"
-                      }`}
+                      className={`w-full text-left px-3 py-2 text-xs flex items-center justify-between transition-colors ${g.id === activeGoal?.id
+                        ? "bg-indigo-600/20 text-indigo-300 font-semibold"
+                        : "text-slate-300 hover:bg-slate-800"
+                        }`}
                     >
                       <span className="truncate">{g.title}</span>
                       <span className="text-[10px] text-slate-500 font-mono ml-2 shrink-0">
@@ -264,68 +269,160 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* 4 Feature Navigation Tabs */}
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 border-t border-slate-900">
-          <div className="flex gap-2 overflow-x-auto py-2 no-scrollbar">
-            <button
-              onClick={() => setActiveTab("tasks")}
-              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold transition-all whitespace-nowrap ${
-                activeTab === "tasks"
-                  ? "bg-indigo-600 text-white shadow-md shadow-indigo-600/30"
-                  : "text-slate-400 hover:text-slate-200 hover:bg-slate-900"
-              }`}
+        {/* Centered Liquid Glass Navigation Dock */}
+        <div className="w-full border-t border-slate-900/80 bg-slate-950/40 backdrop-blur-md">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex justify-center items-center py-3">
+            <nav
+              role="tablist"
+              aria-label="Dashboard Feature Navigation"
+              className="liquid-glass-dock relative inline-flex items-center gap-2 sm:gap-4 p-2 rounded-3xl"
             >
-              <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-              1. Daily Tasks & Execution
-              {todayTasks.length > 0 && (
-                <span className="px-1.5 py-0.2 rounded-full bg-slate-900 text-[10px] font-mono text-emerald-300">
-                  {todayTasks.length}
-                </span>
-              )}
-            </button>
+              {/* 1. Daily Tasks & Execution Logo Tab */}
+              <div className="relative group">
+                <button
+                  type="button"
+                  role="tab"
+                  aria-selected={activeTab === "tasks"}
+                  aria-label="Daily Tasks and Execution Hub"
+                  onClick={() => setActiveTab("tasks")}
+                  className={`liquid-glass-item relative flex items-center justify-center w-14 h-14 rounded-2xl cursor-pointer ${activeTab === "tasks" ? "liquid-glass-item-active-tasks" : ""
+                    }`}
+                >
+                  <DailyTasksLogo className="w-7 h-7" isActive={activeTab === "tasks"} />
 
-            <button
-              onClick={() => setActiveTab("builder")}
-              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold transition-all whitespace-nowrap ${
-                activeTab === "builder"
-                  ? "bg-indigo-600 text-white shadow-md shadow-indigo-600/30"
-                  : "text-slate-400 hover:text-slate-200 hover:bg-slate-900"
-              }`}
-            >
-              <Sparkles className="w-4 h-4 text-indigo-400" />
-              2. AI Goal & Roadmap Builder
-            </button>
+                  {/* Dynamic Badge for today's tasks */}
+                  {todayTasks.length > 0 && (
+                    <span className="absolute -top-1 -right-1 px-1.5 py-0.5 rounded-full bg-emerald-500 text-slate-950 text-[10px] font-black font-mono shadow-lg shadow-emerald-500/50 border-2 border-slate-950 animate-pulse">
+                      {todayTasks.length}
+                    </span>
+                  )}
+                </button>
 
-            <button
-              onClick={() => setActiveTab("recovery")}
-              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold transition-all whitespace-nowrap ${
-                activeTab === "recovery"
-                  ? "bg-amber-600 text-white shadow-md shadow-amber-600/30"
-                  : overdueTasks.length > 0
-                  ? "text-amber-400 bg-amber-950/20 border border-amber-500/30 hover:bg-amber-950/40"
-                  : "text-slate-400 hover:text-slate-200 hover:bg-slate-900"
-              }`}
-            >
-              <RotateCcw className="w-4 h-4 text-amber-400" />
-              3. Goal Recovery Mode
-              {overdueTasks.length > 0 && (
-                <span className="px-1.5 py-0.2 rounded-full bg-amber-500 text-slate-950 text-[10px] font-bold">
-                  {overdueTasks.length} slip
-                </span>
-              )}
-            </button>
+                {/* Micro-Tooltip with context */}
+                <div className="absolute left-1/2 -translate-x-1/2 top-full mt-3 z-50 pointer-events-none opacity-0 group-hover:opacity-100 translate-y-1 group-hover:translate-y-0 transition-all duration-200">
+                  <div className="px-3.5 py-1.5 rounded-xl bg-slate-900/95 border border-white/10 shadow-2xl text-center whitespace-nowrap backdrop-blur-xl">
+                    <p className="text-xs font-bold text-white flex items-center gap-1.5 justify-center">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                      Daily Tasks & Execution
+                    </p>
+                    <p className="text-[10px] text-emerald-400/90 font-mono">
+                      {todayTasks.length} focus items for today
+                    </p>
+                  </div>
+                </div>
 
-            <button
-              onClick={() => setActiveTab("coach")}
-              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold transition-all whitespace-nowrap ${
-                activeTab === "coach"
-                  ? "bg-indigo-600 text-white shadow-md shadow-indigo-600/30"
-                  : "text-slate-400 hover:text-slate-200 hover:bg-slate-900"
-              }`}
-            >
-              <Brain className="w-4 h-4 text-teal-400" />
-              4. AI Coach & Feasibility Insights
-            </button>
+                {/* Active indicator dot beneath */}
+                {activeTab === "tasks" && (
+                  <span className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-2 h-1 rounded-full bg-emerald-400 shadow-sm shadow-emerald-400" />
+                )}
+              </div>
+
+              {/* 2. AI Goal & Roadmap Builder Logo Tab */}
+              <div className="relative group">
+                <button
+                  type="button"
+                  role="tab"
+                  aria-selected={activeTab === "builder"}
+                  aria-label="AI Goal and Roadmap Builder"
+                  onClick={() => setActiveTab("builder")}
+                  className={`liquid-glass-item relative flex items-center justify-center w-14 h-14 rounded-2xl cursor-pointer ${activeTab === "builder" ? "liquid-glass-item-active-builder" : ""
+                    }`}
+                >
+                  <RoadmapBuilderLogo className="w-7 h-7" isActive={activeTab === "builder"} />
+                </button>
+
+                {/* Micro-Tooltip with context */}
+                <div className="absolute left-1/2 -translate-x-1/2 top-full mt-3 z-50 pointer-events-none opacity-0 group-hover:opacity-100 translate-y-1 group-hover:translate-y-0 transition-all duration-200">
+                  <div className="px-3.5 py-1.5 rounded-xl bg-slate-900/95 border border-white/10 shadow-2xl text-center whitespace-nowrap backdrop-blur-xl">
+                    <p className="text-xs font-bold text-white flex items-center gap-1.5 justify-center">
+                      <span className="w-1.5 h-1.5 rounded-full bg-indigo-400" />
+                      AI Goal & Roadmap Builder
+                    </p>
+                    <p className="text-[10px] text-indigo-300/90 font-mono">
+                      Milestone roadmap & AI path synthesizer
+                    </p>
+                  </div>
+                </div>
+
+                {/* Active indicator dot beneath */}
+                {activeTab === "builder" && (
+                  <span className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-2 h-1 rounded-full bg-indigo-400 shadow-sm shadow-indigo-400" />
+                )}
+              </div>
+
+              {/* 3. Goal Recovery Mode Logo Tab */}
+              <div className="relative group">
+                <button
+                  type="button"
+                  role="tab"
+                  aria-selected={activeTab === "recovery"}
+                  aria-label="Goal Recovery Mode"
+                  onClick={() => setActiveTab("recovery")}
+                  className={`liquid-glass-item relative flex items-center justify-center w-14 h-14 rounded-2xl cursor-pointer ${activeTab === "recovery" ? "liquid-glass-item-active-recovery" : ""
+                    }`}
+                >
+                  <RecoveryModeLogo className="w-7 h-7" isActive={activeTab === "recovery"} />
+
+                  {/* Overdue Slippage Alert Badge */}
+                  {overdueTasks.length > 0 && (
+                    <span className="absolute -top-1 -right-1 px-1.5 py-0.5 rounded-full bg-amber-500 text-slate-950 text-[10px] font-black font-mono shadow-lg shadow-amber-500/50 border-2 border-slate-950 animate-bounce">
+                      {overdueTasks.length}
+                    </span>
+                  )}
+                </button>
+
+                {/* Micro-Tooltip with context */}
+                <div className="absolute left-1/2 -translate-x-1/2 top-full mt-3 z-50 pointer-events-none opacity-0 group-hover:opacity-100 translate-y-1 group-hover:translate-y-0 transition-all duration-200">
+                  <div className="px-3.5 py-1.5 rounded-xl bg-slate-900/95 border border-white/10 shadow-2xl text-center whitespace-nowrap backdrop-blur-xl">
+                    <p className="text-xs font-bold text-white flex items-center gap-1.5 justify-center">
+                      <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
+                      Goal Recovery Mode
+                    </p>
+                    <p className="text-[10px] text-amber-300/90 font-mono">
+                      {overdueTasks.length > 0 ? `${overdueTasks.length} slipped • Gemini 7-day ramp` : "Adaptive recalibration & safety net"}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Active indicator dot beneath */}
+                {activeTab === "recovery" && (
+                  <span className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-2 h-1 rounded-full bg-amber-400 shadow-sm shadow-amber-400" />
+                )}
+              </div>
+
+              {/* 4. AI Coach & Feasibility Insights Logo Tab */}
+              <div className="relative group">
+                <button
+                  type="button"
+                  role="tab"
+                  aria-selected={activeTab === "coach"}
+                  aria-label="AI Coach and Feasibility Insights"
+                  onClick={() => setActiveTab("coach")}
+                  className={`liquid-glass-item relative flex items-center justify-center w-14 h-14 rounded-2xl cursor-pointer ${activeTab === "coach" ? "liquid-glass-item-active-coach" : ""
+                    }`}
+                >
+                  <AiCoachLogo className="w-7 h-7" isActive={activeTab === "coach"} />
+                </button>
+
+                {/* Micro-Tooltip with context */}
+                <div className="absolute left-1/2 -translate-x-1/2 top-full mt-3 z-50 pointer-events-none opacity-0 group-hover:opacity-100 translate-y-1 group-hover:translate-y-0 transition-all duration-200">
+                  <div className="px-3.5 py-1.5 rounded-xl bg-slate-900/95 border border-white/10 shadow-2xl text-center whitespace-nowrap backdrop-blur-xl">
+                    <p className="text-xs font-bold text-white flex items-center gap-1.5 justify-center">
+                      <span className="w-1.5 h-1.5 rounded-full bg-teal-400" />
+                      AI Coach & Feasibility Insights
+                    </p>
+                    <p className="text-[10px] text-teal-300/90 font-mono">
+                      Neural cognitive guidance & strategic pacing
+                    </p>
+                  </div>
+                </div>
+
+                {/* Active indicator dot beneath */}
+                {activeTab === "coach" && (
+                  <span className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-2 h-1 rounded-full bg-teal-400 shadow-sm shadow-teal-400" />
+                )}
+              </div>
+            </nav>
           </div>
         </div>
       </header>
@@ -366,9 +463,8 @@ export default function DashboardPage() {
                   </div>
                   <div className="w-full bg-slate-800 h-1.5 rounded-full mt-1.5 overflow-hidden">
                     <div
-                      className={`h-full rounded-full transition-all ${
-                        totalPlannedMinutesToday > userDailyCapacity ? "bg-rose-500" : "bg-emerald-400"
-                      }`}
+                      className={`h-full rounded-full transition-all ${totalPlannedMinutesToday > userDailyCapacity ? "bg-rose-500" : "bg-emerald-400"
+                        }`}
                       style={{ width: `${Math.min(capacityPercent, 100)}%` }}
                     />
                   </div>
@@ -398,8 +494,8 @@ export default function DashboardPage() {
                     {activeGoal?.feasibilityRisk === "low_risk"
                       ? "Healthy pace"
                       : activeGoal?.feasibilityRisk === "high_risk"
-                      ? "High pace risk"
-                      : "Paced with buffers"}
+                        ? "High pace risk"
+                        : "Paced with buffers"}
                   </span>
                 </div>
               </div>
