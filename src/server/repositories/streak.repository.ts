@@ -1,6 +1,7 @@
 import { getDb } from "@/db";
 import { userStreaks, taskEvents, users } from "@/db/schema";
 import { eq, desc, and } from "drizzle-orm";
+import { ensureDatabaseInitialized } from "@/db/init";
 
 export interface StreakInfo {
   currentStreak: number;
@@ -18,6 +19,7 @@ export class StreakRepository {
    * and synchronizing with the user_streaks table in Neon PostgreSQL.
    */
   static async getStreakForUser(userId: string): Promise<StreakInfo> {
+    await ensureDatabaseInitialized();
     const db = getDb();
     const todayStr = new Date().toISOString().split("T")[0];
     const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000);

@@ -1,6 +1,7 @@
 import { getDb } from "@/db";
 import { users, goals, userMedals, userStreaks, taskEvents } from "@/db/schema";
 import { eq, desc, sql, and } from "drizzle-orm";
+import { ensureDatabaseInitialized } from "@/db/init";
 
 export interface LeaderboardEntry {
   rank: number;
@@ -29,36 +30,60 @@ export class LeaderboardRepository {
     currentUserId: string | null,
     sortBy: "goals" | "hard_goals" | "streak" | "medals" = "goals"
   ): Promise<LeaderboardEntry[]> {
+    // 1. Ensure all tables exist in Neon DB
+    await ensureDatabaseInitialized();
+
     const db = getDb();
     if (!db) return [];
 
-    // 1. Fetch all users
-    const allUsers = await db.select().from(users);
+    // 2. Fetch all users
+    let allUsers: any[] = [];
+    try {
+      allUsers = await db.select().from(users);
+    } catch (err) {
+      console.error("[LeaderboardRepository] Error fetching users:", err);
+      return [];
+    }
 
-    // 2. Fetch all completed goals
-    const completedGoals = await db
-      .select({
-        id: goals.id,
-        userId: goals.userId,
-        feasibilityRisk: goals.feasibilityRisk,
-      })
-      .from(goals)
-      .where(eq(goals.status, "completed"));
+    // 3. Fetch all completed goals
+    let completedGoals: any[] = [];
+    try {
+      completedGoals = await db
+        .select({
+          id: goals.id,
+          userId: goals.userId,
+          feasibilityRisk: goals.feasibilityRisk,
+        })
+        .from(goals)
+        .where(eq(goals.status, "completed"));
+    } catch (err) {
+      console.warn("[LeaderboardRepository] Notice fetching completed goals:", err);
+    }
 
-    // 3. Fetch all medals
-    const allMedals = await db
-      .select({
-        id: userMedals.id,
-        userId: userMedals.userId,
-        medalKey: userMedals.medalKey,
-        title: userMedals.title,
-        tier: userMedals.tier,
-      })
-      .from(userMedals)
-      .orderBy(desc(userMedals.unlockedAt));
+    // 4. Fetch all medals
+    let allMedals: any[] = [];
+    try {
+      allMedals = await db
+        .select({
+          id: userMedals.id,
+          userId: userMedals.userId,
+          medalKey: userMedals.medalKey,
+          title: userMedals.title,
+          tier: userMedals.tier,
+        })
+        .from(userMedals)
+        .orderBy(desc(userMedals.unlockedAt));
+    } catch (err) {
+      console.warn("[LeaderboardRepository] Notice fetching medals (re-ensuring table):", err);
+    }
 
-    // 4. Fetch all streaks
-    const allStreaks = await db.select().from(userStreaks);
+    // 5. Fetch all streaks
+    let allStreaks: any[] = [];
+    try {
+      allStreaks = await db.select().from(userStreaks);
+    } catch (err) {
+      console.warn("[LeaderboardRepository] Notice fetching streaks:", err);
+    }
 
     // Map streak by userId
     const streakMap = new Map<string, number>();

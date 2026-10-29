@@ -1,8 +1,10 @@
 import { NextResponse } from "next/server";
 import { getAuthUserId } from "@/server/auth/getUser";
 import { LeaderboardRepository } from "@/server/repositories/leaderboard.repository";
+import { ensureDatabaseInitialized } from "@/db/init";
 
 export async function GET(req: Request) {
+  await ensureDatabaseInitialized();
   const userId = await getAuthUserId();
   const { searchParams } = new URL(req.url);
   const sortByParam = searchParams.get("sortBy") as "goals" | "hard_goals" | "streak" | "medals";

@@ -4,8 +4,10 @@ import { MedalRepository, ALL_MEDAL_DEFINITIONS } from "@/server/repositories/me
 import { getDb } from "@/db";
 import { goals } from "@/db/schema";
 import { eq, and } from "drizzle-orm";
+import { ensureDatabaseInitialized } from "@/db/init";
 
 export async function GET() {
+  await ensureDatabaseInitialized();
   const userId = await getAuthUserId();
   if (!userId) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

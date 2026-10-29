@@ -2,6 +2,8 @@
 
 import React from "react";
 import Link from "next/link";
+import { useSession } from "next-auth/react";
+import { useAuth } from "@/context/AuthContext";
 import {
   Target,
   Sparkles,
@@ -25,6 +27,10 @@ import { AmbientBackground } from "@/components/landing/AmbientBackground";
 import { InteractiveProductShowcase } from "@/components/landing/InteractiveProductShowcase";
 
 export default function LandingPage() {
+  const { data: session, status } = useSession();
+  const { user, isAuthenticated } = useAuth();
+  const isLoggedIn = status === "authenticated" || isAuthenticated || Boolean((session as any)?.user);
+
   return (
     <div className="min-h-screen bg-[#070a12] text-slate-100 flex flex-col selection:bg-indigo-500 selection:text-white relative overflow-x-hidden">
       {/* Dynamic Animated Ambient Background */}
@@ -70,19 +76,39 @@ export default function LandingPage() {
           </nav>
 
           <div className="flex items-center gap-2.5">
-            <Link
-              href="/auth"
-              className="text-xs font-semibold text-slate-300 hover:text-white px-3 py-2 rounded-xl hover:bg-slate-800/60 transition-colors"
-            >
-              Sign In
-            </Link>
-            <Link
-              href="/auth?mode=signup"
-              className="inline-flex items-center gap-1.5 text-xs font-bold bg-gradient-to-r from-indigo-600 to-emerald-500 hover:from-indigo-500 hover:to-emerald-400 text-white px-4 py-2.5 rounded-xl shadow-lg shadow-indigo-600/30 hover:scale-[1.03] transition-all"
-            >
-              Start Forging Free
-              <ArrowRight className="w-3.5 h-3.5" />
-            </Link>
+            {isLoggedIn ? (
+              <>
+                <Link
+                  href="/dashboard"
+                  className="hidden sm:inline-flex text-xs font-semibold text-slate-300 hover:text-white px-3 py-2 rounded-xl hover:bg-slate-800/60 transition-colors"
+                >
+                  {session?.user?.name || user?.name || "Dashboard"}
+                </Link>
+                <Link
+                  href="/dashboard"
+                  className="inline-flex items-center gap-1.5 text-xs font-bold bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-slate-950 px-4 py-2.5 rounded-xl shadow-lg shadow-emerald-500/25 hover:scale-[1.03] transition-all"
+                >
+                  <span>Open Dashboard</span>
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </Link>
+              </>
+            ) : (
+              <>
+                <Link
+                  href="/auth"
+                  className="text-xs font-semibold text-slate-300 hover:text-white px-3 py-2 rounded-xl hover:bg-slate-800/60 transition-colors"
+                >
+                  Sign In
+                </Link>
+                <Link
+                  href="/auth?mode=signup"
+                  className="inline-flex items-center gap-1.5 text-xs font-bold bg-gradient-to-r from-indigo-600 to-emerald-500 hover:from-indigo-500 hover:to-emerald-400 text-white px-4 py-2.5 rounded-xl shadow-lg shadow-indigo-600/30 hover:scale-[1.03] transition-all"
+                >
+                  Start Forging Free
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </Link>
+              </>
+            )}
           </div>
         </div>
       </header>
@@ -109,13 +135,23 @@ export default function LandingPage() {
 
           {/* Action CTAs */}
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3.5 pt-2">
-            <Link
-              href="/auth?mode=signup"
-              className="w-full sm:w-auto inline-flex items-center justify-center gap-2.5 px-8 py-4 rounded-2xl font-bold text-sm bg-gradient-to-r from-indigo-600 via-indigo-500 to-emerald-500 text-white shadow-xl shadow-indigo-600/30 hover:scale-[1.03] transition-all"
-            >
-              <span>Start Forging Free</span>
-              <ArrowRight className="w-4 h-4" />
-            </Link>
+            {isLoggedIn ? (
+              <Link
+                href="/dashboard"
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-2.5 px-8 py-4 rounded-2xl font-bold text-sm bg-gradient-to-r from-emerald-500 via-teal-400 to-indigo-500 text-slate-950 shadow-xl shadow-emerald-500/30 hover:scale-[1.03] transition-all"
+              >
+                <span>Continue to Dashboard</span>
+                <ArrowRight className="w-4 h-4" />
+              </Link>
+            ) : (
+              <Link
+                href="/auth?mode=signup"
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-2.5 px-8 py-4 rounded-2xl font-bold text-sm bg-gradient-to-r from-indigo-600 via-indigo-500 to-emerald-500 text-white shadow-xl shadow-indigo-600/30 hover:scale-[1.03] transition-all"
+              >
+                <span>Start Forging Free</span>
+                <ArrowRight className="w-4 h-4" />
+              </Link>
+            )}
             <a
               href="#demo"
               className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-4 rounded-2xl font-semibold text-sm bg-slate-900/90 hover:bg-slate-800 text-slate-200 border border-slate-700 transition-all hover:border-indigo-500/50"
@@ -387,13 +423,23 @@ export default function LandingPage() {
           </p>
 
           <div className="pt-2">
-            <Link
-              href="/auth?mode=signup"
-              className="inline-flex items-center gap-2.5 px-8 py-4 rounded-2xl font-bold text-base bg-gradient-to-r from-indigo-600 via-indigo-500 to-emerald-500 text-white shadow-2xl shadow-indigo-600/40 hover:scale-[1.04] transition-all"
-            >
-              Start Forging Free Today
-              <ArrowRight className="w-5 h-5" />
-            </Link>
+            {isLoggedIn ? (
+              <Link
+                href="/dashboard"
+                className="inline-flex items-center gap-2.5 px-8 py-4 rounded-2xl font-bold text-base bg-gradient-to-r from-emerald-500 via-teal-400 to-indigo-500 text-slate-950 shadow-2xl shadow-emerald-500/40 hover:scale-[1.04] transition-all"
+              >
+                Go to Your Dashboard
+                <ArrowRight className="w-5 h-5" />
+              </Link>
+            ) : (
+              <Link
+                href="/auth?mode=signup"
+                className="inline-flex items-center gap-2.5 px-8 py-4 rounded-2xl font-bold text-base bg-gradient-to-r from-indigo-600 via-indigo-500 to-emerald-500 text-white shadow-2xl shadow-indigo-600/40 hover:scale-[1.04] transition-all"
+              >
+                Start Forging Free Today
+                <ArrowRight className="w-5 h-5" />
+              </Link>
+            )}
           </div>
         </div>
       </section>

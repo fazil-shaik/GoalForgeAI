@@ -1,6 +1,7 @@
 import { getDb } from "@/db";
 import { userMedals, goals, milestones, tasks, planProposals, taskEvents } from "@/db/schema";
 import { eq, and, desc, sql } from "drizzle-orm";
+import { ensureDatabaseInitialized } from "@/db/init";
 
 export interface MedalDefinition {
   key: string;
@@ -67,13 +68,19 @@ export class MedalRepository {
    * List all medals awarded to a user
    */
   static async listByUserId(userId: string) {
+    await ensureDatabaseInitialized();
     const db = getDb();
     if (!db) return [];
-    return db
-      .select()
-      .from(userMedals)
-      .where(eq(userMedals.userId, userId))
-      .orderBy(desc(userMedals.unlockedAt));
+    try {
+      return await db
+        .select()
+        .from(userMedals)
+        .where(eq(userMedals.userId, userId))
+        .orderBy(desc(userMedals.unlockedAt));
+    } catch (err) {
+      console.warn("[MedalRepository] Notice listing medals:", err);
+      return [];
+    }
   }
 
   /**
@@ -91,47 +98,54 @@ export class MedalRepository {
       metadata?: any;
     }
   ) {
+    await ensureDatabaseInitialized();
     const db = getDb();
     if (!db) return null;
 
-    // Check if user already has this medal for this goal or globally
-    const existing = await db
-      .select({ id: userMedals.id })
-      .from(userMedals)
-      .where(
-        and(
-          eq(userMedals.userId, userId),
-          eq(userMedals.medalKey, medal.key),
-          medal.goalId ? eq(userMedals.goalId, medal.goalId) : sql`TRUE`
+    try {
+      // Check if user already has this medal for this goal or globally
+      const existing = await db
+        .select({ id: userMedals.id })
+        .from(userMedals)
+        .where(
+          and(
+            eq(userMedals.userId, userId),
+            eq(userMedals.medalKey, medal.key),
+            medal.goalId ? eq(userMedals.goalId, medal.goalId) : sql`TRUE`
+          )
         )
-      )
-      .limit(1);
+        .limit(1);
 
-    if (existing.length > 0) {
-      return null; // Already unlocked
+      if (existing.length > 0) {
+        return null; // Already unlocked
+      }
+
+      const inserted = await db
+        .insert(userMedals)
+        .values({
+          userId,
+          goalId: medal.goalId || null,
+          medalKey: medal.key,
+          title: medal.title,
+          description: medal.description,
+          tier: medal.tier,
+          iconType: medal.iconType || "trophy",
+          metadataJson: medal.metadata || {},
+        })
+        .returning();
+
+      return inserted[0] || null;
+    } catch (err) {
+      console.error("[MedalRepository] Error awarding medal:", err);
+      return null;
     }
-
-    const inserted = await db
-      .insert(userMedals)
-      .values({
-        userId,
-        goalId: medal.goalId || null,
-        medalKey: medal.key,
-        title: medal.title,
-        description: medal.description,
-        tier: medal.tier,
-        iconType: medal.iconType || "trophy",
-        metadataJson: medal.metadata || {},
-      })
-      .returning();
-
-    return inserted[0] || null;
   }
 
   /**
    * Evaluate and award medals upon goal completion
    */
   static async evaluateGoalCompletionMedals(goalId: string, userId: string) {
+    await ensureDatabaseInitialized();
     const db = getDb();
     if (!db) return { newlyUnlockedMedals: [], isHardGoal: false };
 
@@ -160,8 +174,9 @@ export class MedalRepository {
     // 2. Determine if it qualifies as a "Hard Goal"
     const isHardGoal =
       goal.feasibilityRisk === "high_risk" ||
-      goalMilestones.length >= 3 ||
-      goalTasks.length >= 5;
+      goal.feasibilityRisk === "moderate_risk" ||
+      goalMilestones.length >= 2 ||
+      goalTasks.length >= 3;
 
     // 3. Award Titan Goal Conqueror
     if (isHardGoal) {
@@ -183,7 +198,7 @@ export class MedalRepository {
     }
 
     // 4. Award Summit Master (Milestone roadmap summit)
-    if (goalMilestones.length >= 3) {
+    if (goalMilestones.length >= 2 || goalTasks.length >= 3) {
       const summitMedal = await this.awardMedal(userId, {
         key: "summit_master",
         title: "Summit Master",
@@ -209,23 +224,16 @@ export class MedalRepository {
       if (phoenixMedal) newlyUnlockedMedals.push(phoenixMedal);
     }
 
-    // 6. Award First Blood if user just completed their first goal
-    const completedGoalsCount = await db
-      .select({ count: sql<number>`count(*)::int` })
-      .from(goals)
-      .where(and(eq(goals.userId, userId), eq(goals.status, "completed")));
-
-    if (completedGoalsCount[0]?.count <= 1) {
-      const firstBloodMedal = await this.awardMedal(userId, {
-        key: "first_blood",
-        title: "First Blood Medal",
-        description: "Forged and completed your inaugural goal on GoalForge.",
-        tier: "bronze",
-        iconType: "target",
-        goalId: goal.id,
-      });
-      if (firstBloodMedal) newlyUnlockedMedals.push(firstBloodMedal);
-    }
+    // 6. Award First Blood
+    const firstBloodMedal = await this.awardMedal(userId, {
+      key: "first_blood",
+      title: "First Blood Medal",
+      description: "Forged and completed an outcome on GoalForge.",
+      tier: "bronze",
+      iconType: "target",
+      goalId: goal.id,
+    });
+    if (firstBloodMedal) newlyUnlockedMedals.push(firstBloodMedal);
 
     // 7. Award Centurion Finisher if total tasks completed >= 10
     const totalEvents = await db

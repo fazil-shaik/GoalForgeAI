@@ -1,9 +1,27 @@
 import { neon } from "@neondatabase/serverless";
 
-const sql = neon(process.env.DATABASE_URL || "");
+function getSql() {
+  const url = process.env.DATABASE_URL;
+  if (!url) return null;
+  return neon(url);
+}
+
+let initPromise: Promise<boolean> | null = null;
+
+export async function ensureDatabaseInitialized(): Promise<boolean> {
+  if (!initPromise) {
+    initPromise = initDatabase().catch((err) => {
+      initPromise = null;
+      console.error("[DB Init] Initialization error:", err);
+      return false;
+    });
+  }
+  return initPromise;
+}
 
 export async function initDatabase() {
-  if (!process.env.DATABASE_URL) {
+  const sql = getSql();
+  if (!sql) {
     console.warn("[DB Init] No DATABASE_URL found.");
     return false;
   }
@@ -282,7 +300,11 @@ async function seedCommunityLeaderboard(sql: any) {
         RETURNING id;
       `;
 
-      const champUserId = inserted[0]?.id;
+      let champUserId = inserted[0]?.id;
+      if (!champUserId) {
+        const found = await sql`SELECT id FROM users WHERE email = ${champion.email} LIMIT 1`;
+        champUserId = found[0]?.id;
+      }
       if (!champUserId) continue;
 
       // Seed user streak
@@ -292,29 +314,35 @@ async function seedCommunityLeaderboard(sql: any) {
         ON CONFLICT (user_id) DO NOTHING;
       `;
 
-      // Seed completed goals
-      for (let i = 0; i < champion.completedGoals; i++) {
-        const isHard = i < champion.hardGoals;
-        await sql`
-          INSERT INTO goals (user_id, title, outcome, category, target_date, status, feasibility_risk)
-          VALUES (
-            ${champUserId},
-            ${`${champion.category.split("&")[0].trim()} Milestone Challenge #${i + 1}`},
-            ${`Successfully achieve outcome for tier ${i + 1}`},
-            ${champion.category},
-            '2026-10-15',
-            'completed',
-            ${isHard ? "high_risk" : "moderate_risk"}
-          );
-        `;
+      // Seed completed goals if empty for this user
+      const existingGoals = await sql`SELECT count(*)::int as count FROM goals WHERE user_id = ${champUserId}`;
+      if (existingGoals[0]?.count === 0) {
+        for (let i = 0; i < champion.completedGoals; i++) {
+          const isHard = i < champion.hardGoals;
+          await sql`
+            INSERT INTO goals (user_id, title, outcome, category, target_date, status, feasibility_risk)
+            VALUES (
+              ${champUserId},
+              ${`${champion.category.split("&")[0].trim()} Milestone Challenge #${i + 1}`},
+              ${`Successfully achieve outcome for tier ${i + 1}`},
+              ${champion.category},
+              '2026-10-15',
+              'completed',
+              ${isHard ? "high_risk" : "moderate_risk"}
+            );
+          `;
+        }
       }
 
-      // Seed medals
-      for (const m of champion.medals) {
-        await sql`
-          INSERT INTO user_medals (user_id, medal_key, title, description, tier, icon_type)
-          VALUES (${champUserId}, ${m.key}, ${m.title}, ${m.desc}, ${m.tier}, 'trophy');
-        `;
+      // Seed medals if empty for this user
+      const existingMedals = await sql`SELECT count(*)::int as count FROM user_medals WHERE user_id = ${champUserId}`;
+      if (existingMedals[0]?.count === 0) {
+        for (const m of champion.medals) {
+          await sql`
+            INSERT INTO user_medals (user_id, medal_key, title, description, tier, icon_type)
+            VALUES (${champUserId}, ${m.key}, ${m.title}, ${m.desc}, ${m.tier}, 'trophy');
+          `;
+        }
       }
     }
 

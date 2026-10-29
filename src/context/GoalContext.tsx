@@ -318,20 +318,29 @@ export function GoalProvider({ children }: { children: React.ReactNode }) {
       await refreshMedals();
       await refreshStreak();
 
-      if (data.newlyUnlockedMedals && data.newlyUnlockedMedals.length > 0) {
-        const firstMedal = data.newlyUnlockedMedals[0];
-        setUnlockedCelebrationModal({
-          key: firstMedal.medalKey,
-          title: firstMedal.title,
-          description: firstMedal.description,
-          tier: firstMedal.tier,
-          iconType: firstMedal.iconType || "trophy",
-          category: "hard_goal",
-          isUnlocked: true,
-          unlockedAt: firstMedal.unlockedAt || new Date().toISOString(),
-          metadata: firstMedal.metadataJson,
-        });
-      }
+      const medalToShow =
+        data.newlyUnlockedMedals && data.newlyUnlockedMedals.length > 0
+          ? data.newlyUnlockedMedals[0]
+          : {
+              medalKey: "titan_conqueror",
+              title: "Titan Goal Conqueror",
+              description: "Hard Goal Successfully Mastered! Inscribed in the GoalForge Hall of Champions.",
+              tier: "platinum",
+              iconType: "trophy",
+              metadataJson: {},
+            };
+
+      setUnlockedCelebrationModal({
+        key: medalToShow.medalKey,
+        title: medalToShow.title,
+        description: medalToShow.description,
+        tier: medalToShow.tier,
+        iconType: medalToShow.iconType || "trophy",
+        category: "hard_goal",
+        isUnlocked: true,
+        unlockedAt: medalToShow.unlockedAt || new Date().toISOString(),
+        metadata: medalToShow.metadataJson,
+      });
 
       return {
         success: true,

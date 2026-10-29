@@ -2,11 +2,13 @@ import { NextResponse } from "next/server";
 import { getAuthUserId } from "@/server/auth/getUser";
 import { GoalRepository } from "@/server/repositories/goal.repository";
 import { MedalRepository } from "@/server/repositories/medal.repository";
+import { ensureDatabaseInitialized } from "@/db/init";
 
 export async function POST(
   req: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  await ensureDatabaseInitialized();
   const userId = await getAuthUserId();
   if (!userId) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
