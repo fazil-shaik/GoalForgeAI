@@ -1,6 +1,6 @@
 import { getDb } from "@/db";
-import { tasks, taskEvents } from "@/db/schema";
-import { eq, and, sql } from "drizzle-orm";
+import { tasks, taskEvents, goals } from "@/db/schema";
+import { eq, and, sql, ne } from "drizzle-orm";
 
 export class TaskRepository {
   static async listByGoalId(goalId: string) {
@@ -27,6 +27,32 @@ export class TaskRepository {
       .select()
       .from(tasks)
       .where(and(eq(tasks.goalId, goalId), eq(tasks.dueAt, todayDate)));
+  }
+
+  static async getTodayTasksForUser(userId: string, todayDate: string) {
+    const db = getDb();
+    if (!db) return [];
+    return db
+      .select({
+        id: tasks.id,
+        goalId: tasks.goalId,
+        title: tasks.title,
+        description: tasks.description,
+        dueAt: tasks.dueAt,
+        priority: tasks.priority,
+        status: tasks.status,
+        estimateMinutes: tasks.estimateMinutes,
+        goalTitle: goals.title,
+      })
+      .from(tasks)
+      .innerJoin(goals, eq(tasks.goalId, goals.id))
+      .where(
+        and(
+          eq(goals.userId, userId),
+          eq(tasks.dueAt, todayDate),
+          eq(goals.status, "active")
+        )
+      );
   }
 
   static async completeTask(taskId: string, userId: string, actualMinutes?: number) {
