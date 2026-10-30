@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useGoal } from "@/context/GoalContext";
 import { CoachingStyle } from "@/types/auth";
+import { PushManagerHelper, PushPermissionStatus } from "@/lib/pushManager";
 import {
   X,
   User,
@@ -25,13 +26,17 @@ import {
   Trophy,
   Target,
   ExternalLink,
+  Bell,
+  BellRing,
+  BellOff,
+  Send,
 } from "lucide-react";
 
 interface ProfileSettingsModalProps {
   isOpen: boolean;
   onClose: () => void;
   onOpenShare?: (mode?: "kickoff" | "streak" | "victory") => void;
-  defaultTab?: "general" | "privacy" | "completed" | "coaching" | "social";
+  defaultTab?: "general" | "privacy" | "completed" | "coaching" | "social" | "notifications";
 }
 
 const COMMON_TIMEZONES = [
@@ -69,7 +74,9 @@ export function ProfileSettingsModal({
   const { user, updateProfile } = useAuth();
   const { completedGoals, hardGoalsCompletedCount, unlockedMedalsCount } = useGoal();
 
-  const [activeTab, setActiveTab] = useState<"general" | "privacy" | "completed" | "coaching" | "social">(defaultTab);
+  const [activeTab, setActiveTab] = useState<
+    "general" | "privacy" | "completed" | "coaching" | "social" | "notifications"
+  >(defaultTab);
 
   useEffect(() => {
     if (defaultTab) {
@@ -89,6 +96,16 @@ export function ProfileSettingsModal({
   const [twitterHandle, setTwitterHandle] = useState("");
   const [linkedinUrl, setLinkedinUrl] = useState("");
 
+  // Push Notification State
+  const [pushEnabled, setPushEnabled] = useState(false);
+  const [dailyBriefingTime, setDailyBriefingTime] = useState("09:00");
+  const [dailyBriefingEnabled, setDailyBriefingEnabled] = useState(true);
+  const [streakRemindersEnabled, setStreakRemindersEnabled] = useState(true);
+  const [pushPermission, setPushPermission] = useState<PushPermissionStatus>("default");
+  const [isSubscribingPush, setIsSubscribingPush] = useState(false);
+  const [isSendingTestPush, setIsSendingTestPush] = useState(false);
+  const [testPushFeedback, setTestPushFeedback] = useState<{ success: boolean; message: string } | null>(null);
+
   const [isSaving, setIsSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -106,8 +123,74 @@ export function ProfileSettingsModal({
       setPrimaryCategory(user.preferences?.primaryCategory || "Software Engineering & Cloud");
       setTwitterHandle((user.preferences as any)?.twitterHandle || "");
       setLinkedinUrl((user.preferences as any)?.linkedinUrl || "");
+
+      const prefs = user.preferences as any;
+      setPushEnabled(Boolean(prefs?.pushNotificationsEnabled));
+      setDailyBriefingTime(prefs?.dailyBriefingTime || "09:00");
+      setDailyBriefingEnabled(prefs?.dailyBriefingEnabled !== false);
+      setStreakRemindersEnabled(prefs?.streakRemindersEnabled !== false);
+    }
+
+    if (typeof window !== "undefined") {
+      setPushPermission(PushManagerHelper.getPermission());
+      PushManagerHelper.getExistingSubscription().then((sub) => {
+        if (sub) {
+          setPushEnabled(true);
+        }
+      });
     }
   }, [user, isOpen]);
+
+  const handleTogglePush = async () => {
+    setIsSubscribingPush(true);
+    setTestPushFeedback(null);
+    try {
+      if (!pushEnabled) {
+        const res = await PushManagerHelper.subscribe();
+        if (res.success) {
+          setPushEnabled(true);
+          setPushPermission("granted");
+          setTestPushFeedback({
+            success: true,
+            message: "Push notifications successfully enabled on this browser!",
+          });
+        } else {
+          setPushPermission(PushManagerHelper.getPermission());
+          setTestPushFeedback({
+            success: false,
+            message: res.message || "Could not enable push notifications.",
+          });
+        }
+      } else {
+        const res = await PushManagerHelper.unsubscribe();
+        if (res.success) {
+          setPushEnabled(false);
+          setTestPushFeedback({
+            success: true,
+            message: "Push notifications disabled on this device.",
+          });
+        }
+      }
+    } finally {
+      setIsSubscribingPush(false);
+    }
+  };
+
+  const handleSendTestPush = async () => {
+    setIsSendingTestPush(true);
+    setTestPushFeedback(null);
+    try {
+      const res = await PushManagerHelper.sendTestPush();
+      setTestPushFeedback(res);
+    } catch {
+      setTestPushFeedback({
+        success: false,
+        message: "Failed to communicate with notification service.",
+      });
+    } finally {
+      setIsSendingTestPush(false);
+    }
+  };
 
   if (!isOpen) return null;
 
@@ -133,6 +216,10 @@ export function ProfileSettingsModal({
           bio: bio.trim(),
           twitterHandle: twitterHandle.trim().replace(/^@/, ""),
           linkedinUrl: linkedinUrl.trim(),
+          pushNotificationsEnabled: pushEnabled,
+          dailyBriefingTime: dailyBriefingTime,
+          dailyBriefingEnabled: dailyBriefingEnabled,
+          streakRemindersEnabled: streakRemindersEnabled,
         },
       });
 
@@ -240,6 +327,16 @@ export function ProfileSettingsModal({
               }`}
           >
             <Share2 className="w-3.5 h-3.5" /> Social & Handles
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab("notifications")}
+            className={`px-3.5 py-2 text-xs font-semibold rounded-t-xl transition-all border-b-2 flex items-center gap-2 ${activeTab === "notifications"
+              ? "border-amber-400 text-amber-300 bg-amber-500/10"
+              : "border-transparent text-slate-400 hover:text-slate-200 hover:bg-white/5"
+              }`}
+          >
+            <Bell className="w-3.5 h-3.5" /> Notifications
           </button>
         </div>
 
@@ -724,6 +821,201 @@ export function ProfileSettingsModal({
                   </button>
                 )}
               </div>
+            </div>
+          )}
+
+          {/* TAB 5: DAILY PUSH NOTIFICATIONS */}
+          {activeTab === "notifications" && (
+            <div className="space-y-5">
+              {/* Device Permission Banner if Denied */}
+              {pushPermission === "denied" && (
+                <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs flex items-start gap-3">
+                  <AlertCircle className="w-5 h-5 shrink-0 text-amber-400 mt-0.5" />
+                  <div className="space-y-1">
+                    <p className="font-bold text-amber-200">Push Notifications are Blocked</p>
+                    <p className="text-slate-300">
+                      Your browser has blocked notification permissions for GoalForge. To enable daily task briefings, please click the site settings icon in your browser address bar and allow Notifications.
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {/* Master Device Toggle Card */}
+              <div className="p-4 rounded-2xl bg-slate-950/60 border border-white/10 space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div
+                      className={`w-10 h-10 rounded-2xl flex items-center justify-center transition-colors ${
+                        pushEnabled
+                          ? "bg-amber-500/20 text-amber-400 border border-amber-500/30"
+                          : "bg-slate-800 text-slate-400 border border-white/10"
+                      }`}
+                    >
+                      {pushEnabled ? <BellRing className="w-5 h-5 animate-pulse" /> : <BellOff className="w-5 h-5" />}
+                    </div>
+                    <div>
+                      <h4 className="text-sm font-bold text-white flex items-center gap-2">
+                        Web Push Notifications
+                        {pushEnabled && (
+                          <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                            Active
+                          </span>
+                        )}
+                      </h4>
+                      <p className="text-xs text-slate-400">
+                        Receive instant briefings and streak updates right on your screen.
+                      </p>
+                    </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    disabled={isSubscribingPush}
+                    onClick={handleTogglePush}
+                    className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${
+                      pushEnabled
+                        ? "bg-rose-500/20 text-rose-300 border border-rose-500/30 hover:bg-rose-500/30"
+                        : "bg-amber-500 hover:bg-amber-400 text-slate-950 shadow-md shadow-amber-500/20"
+                    }`}
+                  >
+                    {isSubscribingPush ? (
+                      <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                    ) : pushEnabled ? (
+                      "Turn Off"
+                    ) : (
+                      <>
+                        <Bell className="w-3.5 h-3.5" /> Enable on this Device
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
+
+              {/* Preferences & Schedule Settings */}
+              <div className="p-4 rounded-2xl bg-slate-950/60 border border-white/10 space-y-5">
+                <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400">
+                  Notification Schedule & Preferences
+                </h4>
+
+                {/* Morning Task Briefing Toggle */}
+                <div className="flex items-start justify-between gap-4 pb-4 border-b border-white/5">
+                  <div className="space-y-1">
+                    <label className="text-xs font-semibold text-white flex items-center gap-2">
+                      <Clock className="w-3.5 h-3.5 text-amber-400" />
+                      Daily Morning Briefing
+                    </label>
+                    <p className="text-[11px] text-slate-400">
+                      Receive an overview of all tasks scheduled for the day, prioritized by urgency.
+                    </p>
+                  </div>
+                  <input
+                    type="checkbox"
+                    checked={dailyBriefingEnabled}
+                    onChange={(e) => setDailyBriefingEnabled(e.target.checked)}
+                    className="w-4 h-4 rounded text-amber-500 focus:ring-amber-400 bg-slate-900 border-white/20 mt-1 cursor-pointer"
+                  />
+                </div>
+
+                {/* Briefing Time Picker */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pb-4 border-b border-white/5">
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+                      Delivery Time
+                    </label>
+                    <select
+                      value={dailyBriefingTime}
+                      disabled={!dailyBriefingEnabled}
+                      onChange={(e) => setDailyBriefingTime(e.target.value)}
+                      className="w-full px-3.5 py-2 rounded-xl bg-slate-900 border border-white/10 text-white text-xs focus:outline-none focus:border-amber-400 disabled:opacity-50"
+                    >
+                      <option value="06:00">06:00 AM (Early Riser)</option>
+                      <option value="07:00">07:00 AM</option>
+                      <option value="08:00">08:00 AM</option>
+                      <option value="09:00">09:00 AM (Standard)</option>
+                      <option value="10:00">10:00 AM</option>
+                      <option value="11:00">11:00 AM</option>
+                      <option value="12:00">12:00 PM (Midday)</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+                      Target Timezone
+                    </label>
+                    <div className="w-full px-3.5 py-2 rounded-xl bg-slate-900/60 border border-white/5 text-slate-300 text-xs font-mono">
+                      {timezone}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Streak Defense Evening Alert */}
+                <div className="flex items-start justify-between gap-4">
+                  <div className="space-y-1">
+                    <label className="text-xs font-semibold text-white flex items-center gap-2">
+                      <Flame className="w-3.5 h-3.5 text-orange-400" />
+                      Evening Streak Guard
+                    </label>
+                    <p className="text-[11px] text-slate-400">
+                      Alert you around 8:00 PM if actionable tasks are incomplete, protecting your daily streak.
+                    </p>
+                  </div>
+                  <input
+                    type="checkbox"
+                    checked={streakRemindersEnabled}
+                    onChange={(e) => setStreakRemindersEnabled(e.target.checked)}
+                    className="w-4 h-4 rounded text-orange-500 focus:ring-orange-400 bg-slate-900 border-white/20 mt-1 cursor-pointer"
+                  />
+                </div>
+              </div>
+
+              {/* Test Notification Action */}
+              <div className="p-4 rounded-2xl bg-gradient-to-r from-amber-950/30 to-slate-900 border border-amber-500/20 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                <div className="space-y-0.5">
+                  <h4 className="text-xs font-bold text-white flex items-center gap-1.5">
+                    <Send className="w-3.5 h-3.5 text-amber-400" />
+                    Verify Push Delivery
+                  </h4>
+                  <p className="text-[11px] text-slate-400">
+                    Dispatch an instant test notification to check browser and system sound/display permissions.
+                  </p>
+                </div>
+
+                <button
+                  type="button"
+                  disabled={isSendingTestPush || !pushEnabled}
+                  onClick={handleSendTestPush}
+                  className="px-3.5 py-2 rounded-xl bg-amber-600 hover:bg-amber-500 text-slate-950 text-xs font-bold transition-all shadow-md shadow-amber-600/20 flex items-center gap-1.5 disabled:opacity-50 cursor-pointer shrink-0"
+                >
+                  {isSendingTestPush ? (
+                    <>
+                      <div className="w-3 h-3 border-2 border-slate-950 border-t-transparent rounded-full animate-spin" />
+                      Testing...
+                    </>
+                  ) : (
+                    <>
+                      <Send className="w-3 h-3" /> Send Test Push
+                    </>
+                  )}
+                </button>
+              </div>
+
+              {/* Test Push Result Alert */}
+              {testPushFeedback && (
+                <div
+                  className={`p-3.5 rounded-xl text-xs flex items-center gap-2 ${
+                    testPushFeedback.success
+                      ? "bg-emerald-500/10 border border-emerald-500/30 text-emerald-300"
+                      : "bg-rose-500/10 border border-rose-500/30 text-rose-300"
+                  }`}
+                >
+                  {testPushFeedback.success ? (
+                    <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                  ) : (
+                    <AlertCircle className="w-4 h-4 text-rose-400 shrink-0" />
+                  )}
+                  <span>{testPushFeedback.message}</span>
+                </div>
+              )}
             </div>
           )}
         </div>

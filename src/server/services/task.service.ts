@@ -1,6 +1,7 @@
 import { TaskRepository } from "@/server/repositories/task.repository";
 import { StreakRepository } from "@/server/repositories/streak.repository";
 import { MedalRepository } from "@/server/repositories/medal.repository";
+import { PushNotificationService } from "@/server/services/push-notification.service";
 
 export class TaskService {
   static async getTasksForGoal(goalId: string) {
@@ -40,6 +41,30 @@ export class TaskService {
         iconType: "shield",
       });
       if (centurionMedal) newlyUnlockedMedals.push(centurionMedal);
+    }
+
+    // Automated Push Notification Celebrations (non-blocking)
+    if (userId) {
+      // 1. Alert for any newly awarded medals
+      for (const medal of newlyUnlockedMedals) {
+        PushNotificationService.sendToUser(userId, {
+          title: `🏆 Medal Unlocked: ${medal.title}!`,
+          body: medal.description,
+          url: "/dashboard",
+          tag: `medal-${medal.key}`,
+        }).catch(() => {});
+      }
+
+      // 2. Alert for key execution streak milestones
+      const STREAK_MILESTONES = [3, 5, 7, 10, 14, 21, 30, 60, 100];
+      if (STREAK_MILESTONES.includes(streak.currentStreak)) {
+        PushNotificationService.sendToUser(userId, {
+          title: `🔥 ${streak.currentStreak}-Day Streak Milestone!`,
+          body: `You crushed "${updatedTask.title}" and locked in ${streak.currentStreak} consecutive days of focused execution.`,
+          url: "/dashboard",
+          tag: `streak-${streak.currentStreak}`,
+        }).catch(() => {});
+      }
     }
 
     return { task: updatedTask, streak, newlyUnlockedMedals };

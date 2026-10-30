@@ -34,6 +34,7 @@ import {
   Share2,
   BarChart3,
   Trash2,
+  Bell,
 } from "lucide-react";
 
 import { GoalBuilderFeature } from "@/components/dashboard/GoalBuilderFeature";
@@ -46,6 +47,7 @@ import { MedalCelebrationModal } from "@/components/dashboard/MedalCelebrationMo
 import { ProfileSettingsModal } from "@/components/dashboard/ProfileSettingsModal";
 import { SocialShareModal } from "@/components/dashboard/SocialShareModal";
 import { OnboardingModal } from "@/components/dashboard/OnboardingModal";
+import { PushOptInBanner } from "@/components/dashboard/PushOptInBanner";
 import {
   DailyTasksLogo,
   RoadmapBuilderLogo,
@@ -60,7 +62,7 @@ export type DashboardTab = "tasks" | "builder" | "recovery" | "coach" | "arena" 
 export default function DashboardPage() {
   const router = useRouter();
   const { data: session, status: sessionStatus } = useSession();
-  const { user, isAuthenticated, logout, isProfileLoaded } = useAuth();
+  const { user, isAuthenticated, logout, isProfileLoaded, refreshProfile } = useAuth();
   const {
     goals,
     activeGoals,
@@ -90,7 +92,7 @@ export default function DashboardPage() {
   const [isSocialShareOpen, setIsSocialShareOpen] = useState(false);
   const [isOnboardingOpen, setIsOnboardingOpen] = useState(false);
   const [socialShareMode, setSocialShareMode] = useState<"kickoff" | "streak" | "victory">("kickoff");
-  const [profileDefaultTab, setProfileDefaultTab] = useState<"general" | "privacy" | "completed" | "coaching" | "social">("general");
+  const [profileDefaultTab, setProfileDefaultTab] = useState<"general" | "privacy" | "completed" | "coaching" | "social" | "notifications">("general");
 
   // Show onboarding form to brand new users who have 0 goals and have not yet onboarded
   useEffect(() => {
@@ -379,6 +381,21 @@ export default function DashboardPage() {
               <span>Share</span>
             </button>
 
+            {/* Quick Daily Notifications Bell */}
+            <button
+              onClick={() => {
+                setProfileDefaultTab("notifications");
+                setIsProfileModalOpen(true);
+              }}
+              title="Daily Push Notifications"
+              className="p-2 rounded-xl text-slate-400 hover:text-amber-400 hover:bg-slate-800/80 transition-colors relative cursor-pointer"
+            >
+              <Bell className="w-4 h-4" />
+              {currentUser.preferences.pushNotificationsEnabled && (
+                <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-emerald-400 ring-2 ring-slate-900" />
+              )}
+            </button>
+
             {/* User Profile Menu */}
             <div className="relative">
               <button
@@ -451,6 +468,25 @@ export default function DashboardPage() {
                     >
                       <Share2 className="w-3.5 h-3.5 text-cyan-400" />
                       Share on X & LinkedIn
+                    </button>
+
+                    <button
+                      onClick={() => {
+                        setIsUserMenuOpen(false);
+                        setProfileDefaultTab("notifications");
+                        setIsProfileModalOpen(true);
+                      }}
+                      className="w-full text-left px-2.5 py-1.5 rounded-lg text-xs font-semibold text-slate-200 hover:bg-slate-800 flex items-center justify-between transition-colors cursor-pointer"
+                    >
+                      <span className="flex items-center gap-2">
+                        <Bell className="w-3.5 h-3.5 text-amber-400" />
+                        Daily Notifications
+                      </span>
+                      {currentUser.preferences.pushNotificationsEnabled ? (
+                        <span className="text-[10px] text-emerald-400 font-mono">Active</span>
+                      ) : (
+                        <span className="text-[10px] text-slate-500 font-mono">Off</span>
+                      )}
                     </button>
                   </div>
 
@@ -712,6 +748,9 @@ export default function DashboardPage() {
 
       {/* Main Content Area */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex-1 w-full">
+        {/* Automated Push Notifications Opt-In Banner */}
+        <PushOptInBanner onEnabled={refreshProfile} />
+
         {/* Goal Summary & Velocity Banner */}
         {activeGoal && (
           <div className="bg-slate-900/80 rounded-2xl border border-slate-800 p-5 mb-6 backdrop-blur-sm">

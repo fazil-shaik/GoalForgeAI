@@ -11,6 +11,10 @@ export interface UserPreferences {
   twitterHandle?: string;
   linkedinUrl?: string;
   onboardingCompleted?: boolean;
+  pushNotificationsEnabled?: boolean;
+  dailyBriefingTime?: string;
+  dailyBriefingEnabled?: boolean;
+  streakRemindersEnabled?: boolean;
 }
 
 export interface UserProfile {

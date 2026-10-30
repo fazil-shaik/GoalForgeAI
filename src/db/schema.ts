@@ -31,6 +31,10 @@ export const users = pgTable("users", {
     twitterHandle?: string;
     linkedinUrl?: string;
     onboardingCompleted?: boolean;
+    pushNotificationsEnabled?: boolean;
+    dailyBriefingTime?: string;
+    dailyBriefingEnabled?: boolean;
+    streakRemindersEnabled?: boolean;
   }>().default({
     availableMinutesPerDay: 45,
     availableDays: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"],
@@ -38,6 +42,10 @@ export const users = pgTable("users", {
     primaryCategory: "Personal Growth & Skills",
     isPublic: true,
     onboardingCompleted: false,
+    pushNotificationsEnabled: false,
+    dailyBriefingTime: "09:00",
+    dailyBriefingEnabled: true,
+    streakRemindersEnabled: true,
   }),
   createdAt: timestamp("created_at", { mode: "date" }).defaultNow().notNull(),
   updatedAt: timestamp("updated_at", { mode: "date" }).defaultNow().notNull(),
@@ -381,12 +389,31 @@ export const userMedals = pgTable("user_medals", {
   unlockedAt: timestamp("unlocked_at", { mode: "date" }).defaultNow().notNull(),
 });
 
+// 19. Push Subscriptions (Web Push Notifications Engine)
+export const pushSubscriptions = pgTable("push_subscriptions", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  userId: uuid("user_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  endpoint: text("endpoint").notNull().unique(),
+  p256dh: text("p256dh").notNull(),
+  auth: text("auth").notNull(),
+  userAgent: text("user_agent"),
+  createdAt: timestamp("created_at", { mode: "date" }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { mode: "date" }).defaultNow().notNull(),
+});
+
+export const pushSubscriptionsRelations = relations(pushSubscriptions, ({ one }) => ({
+  user: one(users, { fields: [pushSubscriptions.userId], references: [users.id] }),
+}));
+
 export const usersRelations = relations(users, ({ one, many }) => ({
   goals: many(goals),
   accounts: many(accounts),
   sessions: many(sessions),
   taskEvents: many(taskEvents),
   notifications: many(notifications),
+  pushSubscriptions: many(pushSubscriptions),
   coachMessages: many(coachMessages),
   streak: one(userStreaks, { fields: [users.id], references: [userStreaks.userId] }),
   medals: many(userMedals),
