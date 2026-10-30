@@ -31,6 +31,7 @@ interface GoalContextType {
   unlockedCelebrationModal: MedalItem | null;
   setUnlockedCelebrationModal: (m: MedalItem | null) => void;
   completeGoal: (goalId: string) => Promise<{ success: boolean; isHardGoal: boolean; newlyUnlockedMedals: any[] }>;
+  deleteGoal: (goalId: string) => Promise<boolean>;
   refreshStreak: () => Promise<void>;
   refreshMedals: () => Promise<void>;
   setActiveGoalId: (id: string) => void;
@@ -245,6 +246,36 @@ export function GoalProvider({ children }: { children: React.ReactNode }) {
       return newGoalId;
     } catch {
       return null;
+    }
+  };
+
+  const deleteGoal = async (goalId: string): Promise<boolean> => {
+    try {
+      const res = await fetch(`/api/goals/${goalId}`, { method: "DELETE" });
+      if (!res.ok) return false;
+
+      // Reload goals list from backend
+      const goalsRes = await fetch("/api/goals");
+      if (goalsRes.ok) {
+        const data = await goalsRes.json();
+        const updatedGoals: Goal[] = data.goals || [];
+        setGoals(updatedGoals);
+
+        const remainingActive = updatedGoals.filter((g) => g.status === "active");
+        if (remainingActive.length > 0) {
+          const nextGoalId = remainingActive[0].id;
+          setActiveGoalIdState(nextGoalId);
+          await fetchGoalDetails(nextGoalId);
+        } else {
+          setActiveGoalIdState("");
+          setMilestones([]);
+          setTasks([]);
+          setRecoveryProposal(null);
+        }
+      }
+      return true;
+    } catch {
+      return false;
     }
   };
 
@@ -624,6 +655,7 @@ export function GoalProvider({ children }: { children: React.ReactNode }) {
         unlockedCelebrationModal,
         setUnlockedCelebrationModal,
         completeGoal,
+        deleteGoal,
         refreshStreak,
         refreshMedals,
         setActiveGoalId,

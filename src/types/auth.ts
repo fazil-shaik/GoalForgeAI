@@ -10,6 +10,7 @@ export interface UserPreferences {
   bio?: string;
   twitterHandle?: string;
   linkedinUrl?: string;
+  onboardingCompleted?: boolean;
 }
 
 export interface UserProfile {

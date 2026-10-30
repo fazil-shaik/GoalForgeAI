@@ -24,12 +24,15 @@ import {
   ArrowUpRight,
   Trophy,
   Medal,
+  Target,
 } from "lucide-react";
 
 export function DailyTaskFeature({
   onNavigateToRecovery,
+  onNavigateToBuilder,
 }: {
   onNavigateToRecovery?: () => void;
+  onNavigateToBuilder?: () => void;
 }) {
   const { user } = useAuth();
   const {
@@ -137,6 +140,33 @@ export function DailyTaskFeature({
     setSkippingTask(null);
     setSkipReason("");
   };
+
+  if (!activeGoal) {
+    return (
+      <div className="space-y-6">
+        <div className="text-center py-16 px-6 bg-slate-900/40 rounded-3xl border border-slate-800/80 backdrop-blur-md max-w-2xl mx-auto my-6 animate-fadeIn">
+          <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-indigo-500/20 via-indigo-600/10 to-emerald-400/20 border border-indigo-500/30 text-indigo-400 flex items-center justify-center mx-auto mb-4 shadow-xl shadow-indigo-500/10">
+            <Target className="w-8 h-8 text-indigo-400" />
+          </div>
+          <h3 className="text-lg font-bold text-white tracking-tight">No Active Goal Selected</h3>
+          <p className="text-xs text-slate-400 mt-2 max-w-md mx-auto leading-relaxed">
+            Your daily execution hub needs an active goal to generate daily sprints and milestones. Synthesize a capacity-paced milestone roadmap with Gemini AI to get started.
+          </p>
+          <div className="flex items-center justify-center gap-3 mt-6">
+            {onNavigateToBuilder && (
+              <button
+                type="button"
+                onClick={onNavigateToBuilder}
+                className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 via-indigo-500 to-emerald-500 text-white font-bold text-xs hover:brightness-110 shadow-lg shadow-indigo-500/20 transition-all flex items-center justify-center gap-2 cursor-pointer"
+              >
+                <Plus className="w-4 h-4 text-white" /> Forge New Goal with AI
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6 animate-fadeIn">

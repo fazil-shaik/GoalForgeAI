@@ -7,6 +7,7 @@ import { UserProfile, UserPreferences } from "@/types/auth";
 interface AuthContextType {
   user: UserProfile | null;
   isLoading: boolean;
+  isProfileLoaded: boolean;
   isAuthenticated: boolean;
   updateProfile: (updated: {
     name?: string;
@@ -25,13 +26,17 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const { data: session, status } = useSession();
   const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [isProfileLoaded, setIsProfileLoaded] = useState<boolean>(false);
 
   const isLoading = status === "loading";
   const isAuthenticated = status === "authenticated" && !!session?.user;
 
   // Fetch full profile from Neon DB
   const refreshProfile = useCallback(async () => {
-    if (!isAuthenticated) return;
+    if (!isAuthenticated) {
+      setIsProfileLoaded(false);
+      return;
+    }
     try {
       const res = await fetch("/api/user/profile");
       if (res.ok) {
@@ -51,6 +56,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               coachingStyle: "compassionate",
               primaryCategory: "Software Engineering & Cloud",
               isPublic: true,
+              onboardingCompleted: false,
             },
             createdAt: data.user.createdAt || new Date().toISOString(),
           });
@@ -58,6 +64,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     } catch {
       // safe fallback
+    } finally {
+      setIsProfileLoaded(true);
     }
   }, [isAuthenticated]);
 
@@ -66,6 +74,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       refreshProfile();
     } else {
       setProfile(null);
+      setIsProfileLoaded(false);
     }
   }, [isAuthenticated, refreshProfile]);
 
@@ -137,6 +146,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       value={{
         user,
         isLoading,
+        isProfileLoaded,
         isAuthenticated,
         updateProfile,
         refreshProfile,

@@ -45,7 +45,7 @@ export const authOptions: NextAuthOptions = {
 
           if (existingUsers.length > 0) {
             dbUserId = existingUsers[0].id;
-            // Update name and avatar if changed
+            // Update name and avatar if changed, preserving existing preferences
             await db
               .update(users)
               .set({
@@ -75,6 +75,7 @@ export const authOptions: NextAuthOptions = {
                   ],
                   coachingStyle: "compassionate",
                   primaryCategory: "Software Engineering & Cloud",
+                  onboardingCompleted: false, // New user needs onboarding
                 },
               })
               .returning();

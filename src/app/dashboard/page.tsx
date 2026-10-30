@@ -33,6 +33,7 @@ import {
   Globe,
   Share2,
   BarChart3,
+  Trash2,
 } from "lucide-react";
 
 import { GoalBuilderFeature } from "@/components/dashboard/GoalBuilderFeature";
@@ -44,6 +45,7 @@ import { AnalyticsFeature } from "@/components/dashboard/AnalyticsFeature";
 import { MedalCelebrationModal } from "@/components/dashboard/MedalCelebrationModal";
 import { ProfileSettingsModal } from "@/components/dashboard/ProfileSettingsModal";
 import { SocialShareModal } from "@/components/dashboard/SocialShareModal";
+import { OnboardingModal } from "@/components/dashboard/OnboardingModal";
 import {
   DailyTasksLogo,
   RoadmapBuilderLogo,
@@ -58,7 +60,7 @@ export type DashboardTab = "tasks" | "builder" | "recovery" | "coach" | "arena" 
 export default function DashboardPage() {
   const router = useRouter();
   const { data: session, status: sessionStatus } = useSession();
-  const { user, isAuthenticated, logout } = useAuth();
+  const { user, isAuthenticated, logout, isProfileLoaded } = useAuth();
   const {
     goals,
     activeGoals,
@@ -71,6 +73,7 @@ export default function DashboardPage() {
     unlockedMedalsCount,
     isLoading: isGoalLoading,
     setActiveGoalId,
+    deleteGoal,
   } = useGoal();
 
   // Strict Google OAuth Guard: without session, strictly no access to dashboard
@@ -85,8 +88,52 @@ export default function DashboardPage() {
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const [isSocialShareOpen, setIsSocialShareOpen] = useState(false);
+  const [isOnboardingOpen, setIsOnboardingOpen] = useState(false);
   const [socialShareMode, setSocialShareMode] = useState<"kickoff" | "streak" | "victory">("kickoff");
   const [profileDefaultTab, setProfileDefaultTab] = useState<"general" | "privacy" | "completed" | "coaching" | "social">("general");
+
+  // Show onboarding form to brand new users who have 0 goals and have not yet onboarded
+  useEffect(() => {
+    // Only check once authentication and goals have finished loading
+    if (sessionStatus === "loading" || isGoalLoading) {
+      return;
+    }
+
+    // Clean up any stale legacy global flag
+    if (typeof window !== "undefined") {
+      try {
+        localStorage.removeItem("goalforge_onboarded_global");
+      } catch {
+        // safe
+      }
+    }
+
+    // A user is already onboarded if:
+    // 1. They have existing active goals or completed goals
+    const hasGoals = goals.length > 0 || completedGoals.length > 0;
+    // 2. Or they explicitly completed onboarding in preferences
+    const hasCompletedPref = user?.preferences?.onboardingCompleted === true;
+    // 3. Or they completed it in this specific browser
+    const hasLocalCompleted =
+      typeof window !== "undefined" &&
+      user?.id &&
+      localStorage.getItem(`goalforge_onboarded_${user.id}`) === "true";
+
+    if (hasGoals || hasCompletedPref || hasLocalCompleted) {
+      setIsOnboardingOpen(false);
+      return;
+    }
+
+    // If they have 0 goals and have not onboarded yet, show the onboarding form!
+    setIsOnboardingOpen(true);
+  }, [
+    sessionStatus,
+    isGoalLoading,
+    goals.length,
+    completedGoals.length,
+    user?.preferences?.onboardingCompleted,
+    user?.id,
+  ]);
 
   // If checking authentication
   if (sessionStatus === "loading") {
@@ -214,11 +261,10 @@ export default function DashboardPage() {
                           setActiveGoalId(g.id);
                           setIsGoalDropdownOpen(false);
                         }}
-                        className={`w-full text-left px-3 py-2 text-xs flex items-center justify-between transition-colors ${
-                          g.id === activeGoal?.id
+                        className={`w-full text-left px-3 py-2 text-xs flex items-center justify-between transition-colors ${g.id === activeGoal?.id
                             ? "bg-indigo-600/20 text-indigo-300 font-semibold"
                             : "text-slate-300 hover:bg-slate-800"
-                        }`}
+                          }`}
                       >
                         <span className="truncate">{g.title}</span>
                         <span className="text-[10px] text-slate-500 font-mono ml-2 shrink-0">
@@ -283,11 +329,10 @@ export default function DashboardPage() {
             <button
               type="button"
               onClick={() => setActiveTab("analytics")}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full border transition-all cursor-pointer backdrop-blur-md ${
-                activeTab === "analytics"
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full border transition-all cursor-pointer backdrop-blur-md ${activeTab === "analytics"
                   ? "bg-cyan-500/20 border-cyan-400 text-cyan-300 shadow-[0_0_15px_rgba(6,182,212,0.35)]"
                   : "bg-slate-900/80 border-white/10 text-slate-300 hover:text-white hover:bg-slate-800"
-              }`}
+                }`}
               title="User Stats & Analytics Graphs"
             >
               <BarChart3 className="w-3.5 h-3.5 text-cyan-400" />
@@ -298,13 +343,12 @@ export default function DashboardPage() {
             <button
               type="button"
               onClick={() => setActiveTab("arena")}
-              className={`flex items-center gap-2 px-3 py-1.5 rounded-full border transition-all cursor-pointer backdrop-blur-md ${
-                streak?.isActiveToday
+              className={`flex items-center gap-2 px-3 py-1.5 rounded-full border transition-all cursor-pointer backdrop-blur-md ${streak?.isActiveToday
                   ? "bg-amber-500/15 border-amber-500/40 text-amber-300 shadow-[0_0_15px_rgba(245,158,11,0.25)] hover:bg-amber-500/25"
                   : streak?.isStreakAtRisk
-                  ? "bg-orange-500/20 border-orange-500/50 text-orange-300 animate-pulse hover:bg-orange-500/30"
-                  : "bg-slate-800/80 border-white/10 text-slate-300 hover:bg-slate-800"
-              }`}
+                    ? "bg-orange-500/20 border-orange-500/50 text-orange-300 animate-pulse hover:bg-orange-500/30"
+                    : "bg-slate-800/80 border-white/10 text-slate-300 hover:bg-slate-800"
+                }`}
               title="Daily Execution Streak • Click to open Championship Arena"
             >
               <Flame className="w-4 h-4 text-amber-400 animate-bounce" />
@@ -635,11 +679,10 @@ export default function DashboardPage() {
                   aria-selected={activeTab === "analytics"}
                   aria-label="User Stats, Graphs and Velocity Analytics"
                   onClick={() => setActiveTab("analytics")}
-                  className={`liquid-glass-item relative flex items-center justify-center w-14 h-14 sm:w-16 sm:h-16 p-1.5 rounded-2xl cursor-pointer transition-all duration-300 ${
-                    activeTab === "analytics"
+                  className={`liquid-glass-item relative flex items-center justify-center w-14 h-14 sm:w-16 sm:h-16 p-1.5 rounded-2xl cursor-pointer transition-all duration-300 ${activeTab === "analytics"
                       ? "liquid-glass-item-active-analytics scale-105 shadow-[0_0_20px_rgba(6,182,212,0.5)] border-cyan-400/80 bg-cyan-500/20"
                       : ""
-                  }`}
+                    }`}
                 >
                   <AnalyticsStatsLogo className="w-full h-full" isActive={activeTab === "analytics"} />
                 </button>
@@ -684,6 +727,18 @@ export default function DashboardPage() {
                   <span className="text-xs font-mono px-2 py-0.5 rounded bg-slate-800 text-slate-300">
                     Plan v{activeGoal.activePlanVersion}.0 Approved
                   </span>
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      if (window.confirm(`Are you sure you want to delete "${activeGoal.title}"? This cannot be undone.`)) {
+                        await deleteGoal(activeGoal.id);
+                      }
+                    }}
+                    title="Delete this goal"
+                    className="ml-auto inline-flex items-center gap-1 text-[11px] text-slate-500 hover:text-rose-400 px-2 py-0.5 rounded hover:bg-rose-500/10 transition-colors cursor-pointer"
+                  >
+                    <Trash2 className="w-3 h-3" /> Delete Goal
+                  </button>
                 </div>
                 <h1 className="text-xl sm:text-2xl font-bold text-white mt-1.5">
                   {activeGoal.title}
@@ -743,12 +798,13 @@ export default function DashboardPage() {
           </div>
         )}
 
-        {/* Celebratory Banner when All Active Goals Are Completed */}
+        {/* Celebratory Banner when All Active Goals Are Completed or Empty */}
         {!activeGoal && (
           <div className="bg-gradient-to-r from-indigo-950/50 via-slate-900 to-emerald-950/40 rounded-2xl border border-white/10 p-6 mb-6 backdrop-blur-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div className="space-y-1">
               <span className="inline-flex items-center gap-1.5 text-xs font-mono font-bold px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
-                <Sparkles className="w-3.5 h-3.5" /> All Active Goals Completed
+                <Sparkles className="w-3.5 h-3.5" />
+                {completedGoals.length > 0 ? "All Active Goals Completed" : "Welcome to GoalForge AI"}
               </span>
               <h2 className="text-xl font-bold text-white">
                 {completedGoals.length > 0
@@ -761,8 +817,8 @@ export default function DashboardPage() {
                   : "Let Gemini AI synthesize a capacity-paced milestone roadmap for your ambitious goals."}
               </p>
             </div>
-            <div className="flex items-center gap-2.5 shrink-0">
-              {completedGoals.length > 0 && (
+            <div className="flex items-center gap-2.5 shrink-0 flex-wrap">
+              {completedGoals.length > 0 ? (
                 <button
                   type="button"
                   onClick={() => {
@@ -773,13 +829,21 @@ export default function DashboardPage() {
                 >
                   <Trophy className="w-3.5 h-3.5" /> View Conquered Goals ({completedGoals.length})
                 </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => setIsOnboardingOpen(true)}
+                  className="px-4 py-2 rounded-xl bg-gradient-to-r from-indigo-600 via-indigo-500 to-emerald-500 text-white font-bold text-xs hover:brightness-110 shadow-lg shadow-indigo-500/20 transition-all cursor-pointer flex items-center gap-1.5"
+                >
+                  <Sparkles className="w-3.5 h-3.5" /> Start Onboarding Setup
+                </button>
               )}
               <button
                 type="button"
                 onClick={() => setActiveTab("builder")}
-                className="px-4 py-2 rounded-xl bg-gradient-to-r from-indigo-600 to-emerald-500 text-white font-bold text-xs hover:brightness-110 shadow-lg shadow-indigo-500/20 transition-all cursor-pointer flex items-center gap-1.5"
+                className="px-4 py-2 rounded-xl bg-slate-900 border border-slate-700 hover:border-slate-600 text-slate-200 font-bold text-xs transition-all cursor-pointer flex items-center gap-1.5"
               >
-                <Plus className="w-3.5 h-3.5" /> Forge New Goal with AI
+                <Plus className="w-3.5 h-3.5 text-indigo-400" /> Forge New Goal with AI
               </button>
             </div>
           </div>
@@ -789,7 +853,10 @@ export default function DashboardPage() {
         <div id="feature-container" className="space-y-6">
           {/* Shell Placeholder / Feature Router */}
           {activeTab === "tasks" && (
-            <DailyTaskFeature onNavigateToRecovery={() => setActiveTab("recovery")} />
+            <DailyTaskFeature
+              onNavigateToRecovery={() => setActiveTab("recovery")}
+              onNavigateToBuilder={() => setActiveTab("builder")}
+            />
           )}
 
           {activeTab === "builder" && (
@@ -851,6 +918,16 @@ export default function DashboardPage() {
         isOpen={isSocialShareOpen}
         onClose={() => setIsSocialShareOpen(false)}
         defaultMode={socialShareMode}
+      />
+
+      {/* Seamless Guided Onboarding Wizard Modal */}
+      <OnboardingModal
+        isOpen={isOnboardingOpen}
+        onClose={() => setIsOnboardingOpen(false)}
+        onComplete={() => {
+          setIsOnboardingOpen(false);
+          setActiveTab("tasks");
+        }}
       />
     </div>
   );

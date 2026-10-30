@@ -2,13 +2,7 @@ import { GoalRepository } from "@/server/repositories/goal.repository";
 
 export class GoalService {
   static async getUserGoals(userId: string) {
-    let list = await GoalRepository.listByUserId(userId);
-    if (list.length === 0) {
-      // Auto-seed initial demo goal so the user immediately has real interactive records in Neon DB
-      await GoalRepository.seedInitialGoalIfEmpty(userId);
-      list = await GoalRepository.listByUserId(userId);
-    }
-    return list;
+    return GoalRepository.listByUserId(userId);
   }
 
   static async getGoalDetails(goalId: string) {

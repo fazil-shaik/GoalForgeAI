@@ -30,12 +30,14 @@ export const users = pgTable("users", {
     bio?: string;
     twitterHandle?: string;
     linkedinUrl?: string;
+    onboardingCompleted?: boolean;
   }>().default({
     availableMinutesPerDay: 45,
     availableDays: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"],
     coachingStyle: "compassionate",
     primaryCategory: "Personal Growth & Skills",
     isPublic: true,
+    onboardingCompleted: false,
   }),
   createdAt: timestamp("created_at", { mode: "date" }).defaultNow().notNull(),
   updatedAt: timestamp("updated_at", { mode: "date" }).defaultNow().notNull(),
