@@ -206,14 +206,14 @@ export function InteractiveProductShowcase() {
               </div>
             </div>
 
-            <div className="p-3 bg-emerald-950/20 border border-emerald-500/30 rounded-xl flex items-center justify-between text-xs text-emerald-300">
+            <div className="p-3 bg-emerald-950/20 border border-emerald-500/30 rounded-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs text-emerald-300">
               <span className="flex items-center gap-2">
-                <ShieldCheck className="w-4 h-4 text-emerald-400" />
+                <ShieldCheck className="w-4 h-4 text-emerald-400 shrink-0" />
                 Guaranteed: No plan is activated until you explicitly review and approve.
               </span>
               <button
                 onClick={() => setActiveStage(2)}
-                className="font-bold text-emerald-400 hover:text-white flex items-center gap-1"
+                className="font-bold text-emerald-400 hover:text-white flex items-center gap-1 shrink-0 cursor-pointer self-end sm:self-auto"
               >
                 Next: Daily Execution <ChevronRight className="w-3.5 h-3.5" />
               </button>
@@ -306,11 +306,11 @@ export function InteractiveProductShowcase() {
               </div>
             </div>
 
-            <div className="flex items-center justify-between text-xs text-slate-400 pt-1">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs text-slate-400 pt-1">
               <span>Try clicking the checkboxes above to experience instant celebration feedback!</span>
               <button
                 onClick={() => setActiveStage(3)}
-                className="font-bold text-amber-400 hover:text-white flex items-center gap-1"
+                className="font-bold text-amber-400 hover:text-white flex items-center gap-1 shrink-0 cursor-pointer self-end sm:self-auto"
               >
                 Next: What if you miss a day? <ChevronRight className="w-3.5 h-3.5" />
               </button>

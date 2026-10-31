@@ -49,6 +49,7 @@ import { SocialShareModal } from "@/components/dashboard/SocialShareModal";
 import { OnboardingModal } from "@/components/dashboard/OnboardingModal";
 import { PushOptInBanner } from "@/components/dashboard/PushOptInBanner";
 import { GoalForgeArrowLoader } from "@/components/ui/GoalForgeArrowLoader";
+import { UserAvatar } from "@/components/ui/UserAvatar";
 
 import {
   DailyTasksLogo,
@@ -242,7 +243,7 @@ export default function DashboardPage() {
             <div className="relative">
               <button
                 onClick={() => setIsGoalDropdownOpen(!isGoalDropdownOpen)}
-                className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-900 border border-slate-700/80 hover:border-slate-600 text-xs font-medium text-slate-200 transition-colors max-w-[240px] truncate"
+                className="flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-1.5 rounded-xl bg-slate-900 border border-slate-700/80 hover:border-slate-600 text-xs font-medium text-slate-200 transition-colors max-w-[120px] xs:max-w-[150px] sm:max-w-[220px] md:max-w-[280px] truncate"
               >
                 <Target className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
                 <span className="truncate">{activeGoal?.title || (activeGoals.length === 0 && completedGoals.length > 0 ? "All Goals Conquered 🎉" : "Select Goal")}</span>
@@ -250,7 +251,7 @@ export default function DashboardPage() {
               </button>
 
               {isGoalDropdownOpen && (
-                <div className="absolute left-0 mt-2 w-72 rounded-xl bg-slate-900 border border-slate-800 shadow-2xl py-2 z-50 animate-fadeIn">
+                <div className="absolute left-0 mt-2 w-64 sm:w-72 rounded-xl bg-slate-900 border border-slate-800 shadow-2xl py-2 z-50 animate-fadeIn">
                   <div className="px-3 py-1.5 text-[10px] uppercase font-bold text-slate-400 tracking-wider flex items-center justify-between">
                     <span>Active Goals ({activeGoals.length})</span>
                     {activeGoals.length > 0 && (
@@ -276,8 +277,8 @@ export default function DashboardPage() {
                           setIsGoalDropdownOpen(false);
                         }}
                         className={`w-full text-left px-3 py-2 text-xs flex items-center justify-between transition-colors ${g.id === activeGoal?.id
-                            ? "bg-indigo-600/20 text-indigo-300 font-semibold"
-                            : "text-slate-300 hover:bg-slate-800"
+                          ? "bg-indigo-600/20 text-indigo-300 font-semibold"
+                          : "text-slate-300 hover:bg-slate-800"
                           }`}
                       >
                         <span className="truncate">{g.title}</span>
@@ -327,7 +328,7 @@ export default function DashboardPage() {
           </div>
 
           {/* Right Header Navigation & User Profile */}
-          <div className="flex items-center gap-2 sm:gap-3">
+          <div className="flex items-center gap-1.5 sm:gap-3">
             {/* Quick Recovery Alert Banner */}
             {hasPendingRecovery && (
               <button
@@ -343,9 +344,9 @@ export default function DashboardPage() {
             <button
               type="button"
               onClick={() => setActiveTab("analytics")}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full border transition-all cursor-pointer backdrop-blur-md ${activeTab === "analytics"
-                  ? "bg-cyan-500/20 border-cyan-400 text-cyan-300 shadow-[0_0_15px_rgba(6,182,212,0.35)]"
-                  : "bg-slate-900/80 border-white/10 text-slate-300 hover:text-white hover:bg-slate-800"
+              className={`flex items-center gap-1.5 p-1.5 sm:px-3 sm:py-1.5 rounded-full border transition-all cursor-pointer backdrop-blur-md ${activeTab === "analytics"
+                ? "bg-cyan-500/20 border-cyan-400 text-cyan-300 shadow-[0_0_15px_rgba(6,182,212,0.35)]"
+                : "bg-slate-900/80 border-white/10 text-slate-300 hover:text-white hover:bg-slate-800"
                 }`}
               title="User Stats & Analytics Graphs"
             >
@@ -357,16 +358,16 @@ export default function DashboardPage() {
             <button
               type="button"
               onClick={() => setActiveTab("arena")}
-              className={`flex items-center gap-2 px-3 py-1.5 rounded-full border transition-all cursor-pointer backdrop-blur-md ${streak?.isActiveToday
-                  ? "bg-amber-500/15 border-amber-500/40 text-amber-300 shadow-[0_0_15px_rgba(245,158,11,0.25)] hover:bg-amber-500/25"
-                  : streak?.isStreakAtRisk
-                    ? "bg-orange-500/20 border-orange-500/50 text-orange-300 animate-pulse hover:bg-orange-500/30"
-                    : "bg-slate-800/80 border-white/10 text-slate-300 hover:bg-slate-800"
+              className={`flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1 sm:py-1.5 rounded-full border transition-all cursor-pointer backdrop-blur-md ${streak?.isActiveToday
+                ? "bg-amber-500/15 border-amber-500/40 text-amber-300 shadow-[0_0_15px_rgba(245,158,11,0.25)] hover:bg-amber-500/25"
+                : streak?.isStreakAtRisk
+                  ? "bg-orange-500/20 border-orange-500/50 text-orange-300 animate-pulse hover:bg-orange-500/30"
+                  : "bg-slate-800/80 border-white/10 text-slate-300 hover:bg-slate-800"
                 }`}
               title="Daily Execution Streak • Click to open Championship Arena"
             >
-              <Flame className="w-4 h-4 text-amber-400 animate-bounce" />
-              <div className="flex items-center gap-1.5">
+              <Flame className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-400 animate-bounce" />
+              <div className="flex items-center gap-1">
                 <span className="text-xs font-black font-mono">
                   {streak?.currentStreak || 0}
                 </span>
@@ -412,15 +413,13 @@ export default function DashboardPage() {
             <div className="relative">
               <button
                 onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
-                className="flex items-center gap-2 p-1.5 rounded-xl hover:bg-slate-800/80 transition-colors"
+                className="flex items-center gap-2 p-1.5 rounded-xl hover:bg-slate-800/80 transition-colors cursor-pointer"
               >
-                <div className="w-8 h-8 rounded-lg bg-indigo-600/30 border border-indigo-500/40 text-indigo-300 flex items-center justify-center font-bold text-xs overflow-hidden">
-                  {currentUser.image ? (
-                    <img src={currentUser.image} alt={currentUser.name} className="w-full h-full object-cover" />
-                  ) : (
-                    currentUser.name?.slice(0, 2).toUpperCase() || "GF"
-                  )}
-                </div>
+                <UserAvatar
+                  src={currentUser.image}
+                  name={currentUser.name}
+                  size="md"
+                />
                 <div className="hidden lg:flex flex-col text-left">
                   <span className="text-xs font-semibold text-slate-200">{currentUser.name}</span>
                   <span className="text-[10px] text-emerald-400 font-mono flex items-center gap-1">
@@ -436,11 +435,20 @@ export default function DashboardPage() {
               </button>
 
               {isUserMenuOpen && (
-                <div className="absolute right-0 mt-2 w-64 rounded-xl bg-slate-900 border border-slate-800 shadow-2xl py-2 z-50">
-                  <div className="px-4 py-2 border-b border-slate-800">
-                    <p className="text-xs font-bold text-white">{currentUser.name}</p>
-                    <p className="text-[11px] text-slate-400 truncate">{currentUser.email}</p>
-                    <div className="mt-1.5 flex items-center justify-between text-[10px] text-indigo-400 bg-indigo-950/40 px-2 py-0.5 rounded border border-indigo-500/20">
+                <div className="absolute right-0 mt-2 w-64 rounded-xl bg-slate-900 border border-slate-800 shadow-2xl py-2 z-50 animate-fadeIn">
+                  <div className="px-4 py-2.5 border-b border-slate-800 flex items-center gap-3">
+                    <UserAvatar
+                      src={currentUser.image}
+                      name={currentUser.name}
+                      size="md"
+                    />
+                    <div className="truncate flex-1">
+                      <p className="text-xs font-bold text-white truncate">{currentUser.name}</p>
+                      <p className="text-[11px] text-slate-400 truncate">{currentUser.email}</p>
+                    </div>
+                  </div>
+                  <div className="px-4 py-1.5 border-b border-slate-800 bg-slate-950/40">
+                    <div className="flex items-center justify-between text-[10px] text-indigo-400 bg-indigo-950/40 px-2 py-0.5 rounded border border-indigo-500/20">
                       <span>Coaching: {currentUser.preferences.coachingStyle}</span>
                       <span className="font-mono">{currentUser.preferences.availableMinutesPerDay}m/day</span>
                     </div>
@@ -526,12 +534,12 @@ export default function DashboardPage() {
         </div>
 
         {/* Centered Liquid Glass Navigation Dock */}
-        <div className="w-full border-t border-slate-900/80 bg-slate-950/40 backdrop-blur-md">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex justify-center items-center py-3">
+        <div className="w-full border-t border-slate-900/80 bg-slate-950/40 backdrop-blur-md overflow-x-auto md:overflow-visible relative z-30">
+          <div className="max-w-7xl mx-auto px-2 sm:px-6 lg:px-8 flex justify-start md:justify-center items-center py-2 sm:py-3 overflow-x-auto md:overflow-visible no-scrollbar scroll-smooth relative z-30">
             <nav
               role="tablist"
               aria-label="Dashboard Feature Navigation"
-              className="liquid-glass-dock relative inline-flex items-center gap-2 sm:gap-4 p-2 rounded-3xl"
+              className="liquid-glass-dock relative inline-flex items-center gap-1.5 xs:gap-2 sm:gap-3 md:gap-4 p-1.5 sm:p-2 rounded-2xl sm:rounded-3xl shrink-0 mx-auto"
             >
               {/* 1. Daily Tasks & Execution Logo Tab */}
               <div className="relative group">
@@ -541,7 +549,7 @@ export default function DashboardPage() {
                   aria-selected={activeTab === "tasks"}
                   aria-label="Daily Tasks and Execution Hub"
                   onClick={() => setActiveTab("tasks")}
-                  className={`liquid-glass-item relative flex items-center justify-center w-14 h-14 sm:w-16 sm:h-16 p-1.5 rounded-2xl cursor-pointer transition-all duration-300 ${activeTab === "tasks" ? "liquid-glass-item-active-tasks scale-105 shadow-[0_0_20px_rgba(16,185,129,0.5)]" : ""
+                  className={`liquid-glass-item relative flex items-center justify-center w-11 h-11 xs:w-12 xs:h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 p-1 sm:p-1.5 rounded-xl sm:rounded-2xl cursor-pointer transition-all duration-300 ${activeTab === "tasks" ? "liquid-glass-item-active-tasks scale-105 shadow-[0_0_20px_rgba(16,185,129,0.5)]" : ""
                     }`}
                 >
                   <DailyTasksLogo className="w-full h-full" isActive={activeTab === "tasks"} />
@@ -555,8 +563,9 @@ export default function DashboardPage() {
                 </button>
 
                 {/* Micro-Tooltip with context */}
-                <div className="absolute left-1/2 -translate-x-1/2 top-full mt-3 z-50 pointer-events-none opacity-0 group-hover:opacity-100 translate-y-1 group-hover:translate-y-0 transition-all duration-200">
-                  <div className="px-3.5 py-1.5 rounded-xl bg-slate-900/95 border border-white/10 shadow-2xl text-center whitespace-nowrap backdrop-blur-xl">
+                <div className="hidden md:block absolute left-1/2 -translate-x-1/2 top-full mt-2.5 z-[60] pointer-events-none opacity-0 group-hover:opacity-100 translate-y-1 group-hover:translate-y-0 transition-all duration-200">
+                  <div className="relative px-3.5 py-1.5 rounded-xl bg-slate-900/95 border border-white/20 shadow-[0_12px_30px_rgba(0,0,0,0.85)] text-center whitespace-nowrap backdrop-blur-xl">
+                    <div className="absolute -top-1 left-1/2 -translate-x-1/2 w-2 h-2 rotate-45 bg-slate-900 border-t border-l border-white/20" />
                     <p className="text-xs font-bold text-white flex items-center gap-1.5 justify-center">
                       <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
                       Daily Tasks & Execution
@@ -581,15 +590,16 @@ export default function DashboardPage() {
                   aria-selected={activeTab === "builder"}
                   aria-label="AI Goal and Roadmap Builder"
                   onClick={() => setActiveTab("builder")}
-                  className={`liquid-glass-item relative flex items-center justify-center w-14 h-14 sm:w-16 sm:h-16 p-1.5 rounded-2xl cursor-pointer transition-all duration-300 ${activeTab === "builder" ? "liquid-glass-item-active-builder scale-105 shadow-[0_0_20px_rgba(99,102,241,0.5)]" : ""
+                  className={`liquid-glass-item relative flex items-center justify-center w-11 h-11 xs:w-12 xs:h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 p-1 sm:p-1.5 rounded-xl sm:rounded-2xl cursor-pointer transition-all duration-300 ${activeTab === "builder" ? "liquid-glass-item-active-builder scale-105 shadow-[0_0_20px_rgba(99,102,241,0.5)]" : ""
                     }`}
                 >
                   <RoadmapBuilderLogo className="w-full h-full" isActive={activeTab === "builder"} />
                 </button>
 
                 {/* Micro-Tooltip with context */}
-                <div className="absolute left-1/2 -translate-x-1/2 top-full mt-3 z-50 pointer-events-none opacity-0 group-hover:opacity-100 translate-y-1 group-hover:translate-y-0 transition-all duration-200">
-                  <div className="px-3.5 py-1.5 rounded-xl bg-slate-900/95 border border-white/10 shadow-2xl text-center whitespace-nowrap backdrop-blur-xl">
+                <div className="hidden md:block absolute left-1/2 -translate-x-1/2 top-full mt-2.5 z-[60] pointer-events-none opacity-0 group-hover:opacity-100 translate-y-1 group-hover:translate-y-0 transition-all duration-200">
+                  <div className="relative px-3.5 py-1.5 rounded-xl bg-slate-900/95 border border-white/20 shadow-[0_12px_30px_rgba(0,0,0,0.85)] text-center whitespace-nowrap backdrop-blur-xl">
+                    <div className="absolute -top-1 left-1/2 -translate-x-1/2 w-2 h-2 rotate-45 bg-slate-900 border-t border-l border-white/20" />
                     <p className="text-xs font-bold text-white flex items-center gap-1.5 justify-center">
                       <span className="w-1.5 h-1.5 rounded-full bg-indigo-400" />
                       AI Goal & Roadmap Builder
@@ -614,7 +624,7 @@ export default function DashboardPage() {
                   aria-selected={activeTab === "recovery"}
                   aria-label="Goal Recovery Mode"
                   onClick={() => setActiveTab("recovery")}
-                  className={`liquid-glass-item relative flex items-center justify-center w-14 h-14 sm:w-16 sm:h-16 p-1.5 rounded-2xl cursor-pointer transition-all duration-300 ${activeTab === "recovery" ? "liquid-glass-item-active-recovery scale-105 shadow-[0_0_20px_rgba(245,158,11,0.5)]" : ""
+                  className={`liquid-glass-item relative flex items-center justify-center w-11 h-11 xs:w-12 xs:h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 p-1 sm:p-1.5 rounded-xl sm:rounded-2xl cursor-pointer transition-all duration-300 ${activeTab === "recovery" ? "liquid-glass-item-active-recovery scale-105 shadow-[0_0_20px_rgba(245,158,11,0.5)]" : ""
                     }`}
                 >
                   <RecoveryModeLogo className="w-full h-full" isActive={activeTab === "recovery"} />
@@ -628,8 +638,9 @@ export default function DashboardPage() {
                 </button>
 
                 {/* Micro-Tooltip with context */}
-                <div className="absolute left-1/2 -translate-x-1/2 top-full mt-3 z-50 pointer-events-none opacity-0 group-hover:opacity-100 translate-y-1 group-hover:translate-y-0 transition-all duration-200">
-                  <div className="px-3.5 py-1.5 rounded-xl bg-slate-900/95 border border-white/10 shadow-2xl text-center whitespace-nowrap backdrop-blur-xl">
+                <div className="hidden md:block absolute left-1/2 -translate-x-1/2 top-full mt-2.5 z-[60] pointer-events-none opacity-0 group-hover:opacity-100 translate-y-1 group-hover:translate-y-0 transition-all duration-200">
+                  <div className="relative px-3.5 py-1.5 rounded-xl bg-slate-900/95 border border-white/20 shadow-[0_12px_30px_rgba(0,0,0,0.85)] text-center whitespace-nowrap backdrop-blur-xl">
+                    <div className="absolute -top-1 left-1/2 -translate-x-1/2 w-2 h-2 rotate-45 bg-slate-900 border-t border-l border-white/20" />
                     <p className="text-xs font-bold text-white flex items-center gap-1.5 justify-center">
                       <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
                       Goal Recovery Mode
@@ -654,15 +665,16 @@ export default function DashboardPage() {
                   aria-selected={activeTab === "coach"}
                   aria-label="AI Coach and Feasibility Insights"
                   onClick={() => setActiveTab("coach")}
-                  className={`liquid-glass-item relative flex items-center justify-center w-14 h-14 sm:w-16 sm:h-16 p-1.5 rounded-2xl cursor-pointer transition-all duration-300 ${activeTab === "coach" ? "liquid-glass-item-active-coach scale-105 shadow-[0_0_20px_rgba(20,184,166,0.5)]" : ""
+                  className={`liquid-glass-item relative flex items-center justify-center w-11 h-11 xs:w-12 xs:h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 p-1 sm:p-1.5 rounded-xl sm:rounded-2xl cursor-pointer transition-all duration-300 ${activeTab === "coach" ? "liquid-glass-item-active-coach scale-105 shadow-[0_0_20px_rgba(20,184,166,0.5)]" : ""
                     }`}
                 >
                   <AiCoachLogo className="w-full h-full" isActive={activeTab === "coach"} />
                 </button>
 
                 {/* Micro-Tooltip with context */}
-                <div className="absolute left-1/2 -translate-x-1/2 top-full mt-3 z-50 pointer-events-none opacity-0 group-hover:opacity-100 translate-y-1 group-hover:translate-y-0 transition-all duration-200">
-                  <div className="px-3.5 py-1.5 rounded-xl bg-slate-900/95 border border-white/10 shadow-2xl text-center whitespace-nowrap backdrop-blur-xl">
+                <div className="hidden md:block absolute left-1/2 -translate-x-1/2 top-full mt-2.5 z-[60] pointer-events-none opacity-0 group-hover:opacity-100 translate-y-1 group-hover:translate-y-0 transition-all duration-200">
+                  <div className="relative px-3.5 py-1.5 rounded-xl bg-slate-900/95 border border-white/20 shadow-[0_12px_30px_rgba(0,0,0,0.85)] text-center whitespace-nowrap backdrop-blur-xl">
+                    <div className="absolute -top-1 left-1/2 -translate-x-1/2 w-2 h-2 rotate-45 bg-slate-900 border-t border-l border-white/20" />
                     <p className="text-xs font-bold text-white flex items-center gap-1.5 justify-center">
                       <span className="w-1.5 h-1.5 rounded-full bg-teal-400" />
                       AI Coach & Feasibility Insights
@@ -687,7 +699,7 @@ export default function DashboardPage() {
                   aria-selected={activeTab === "arena"}
                   aria-label="Leaderboard, Medals and Daily Streaks Arena"
                   onClick={() => setActiveTab("arena")}
-                  className={`liquid-glass-item relative flex items-center justify-center w-14 h-14 sm:w-16 sm:h-16 p-1.5 rounded-2xl cursor-pointer transition-all duration-300 ${activeTab === "arena" ? "liquid-glass-item-active-arena scale-105 shadow-[0_0_20px_rgba(234,179,8,0.5)]" : ""
+                  className={`liquid-glass-item relative flex items-center justify-center w-11 h-11 xs:w-12 xs:h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 p-1 sm:p-1.5 rounded-xl sm:rounded-2xl cursor-pointer transition-all duration-300 ${activeTab === "arena" ? "liquid-glass-item-active-arena scale-105 shadow-[0_0_20px_rgba(234,179,8,0.5)]" : ""
                     }`}
                 >
                   <LeaderboardLogo className="w-full h-full" isActive={activeTab === "arena"} />
@@ -701,8 +713,9 @@ export default function DashboardPage() {
                 </button>
 
                 {/* Micro-Tooltip with context */}
-                <div className="absolute left-1/2 -translate-x-1/2 top-full mt-3 z-50 pointer-events-none opacity-0 group-hover:opacity-100 translate-y-1 group-hover:translate-y-0 transition-all duration-200">
-                  <div className="px-3.5 py-1.5 rounded-xl bg-slate-900/95 border border-white/10 shadow-2xl text-center whitespace-nowrap backdrop-blur-xl">
+                <div className="hidden md:block absolute left-1/2 -translate-x-1/2 top-full mt-2.5 z-[60] pointer-events-none opacity-0 group-hover:opacity-100 translate-y-1 group-hover:translate-y-0 transition-all duration-200">
+                  <div className="relative px-3.5 py-1.5 rounded-xl bg-slate-900/95 border border-white/20 shadow-[0_12px_30px_rgba(0,0,0,0.85)] text-center whitespace-nowrap backdrop-blur-xl">
+                    <div className="absolute -top-1 left-1/2 -translate-x-1/2 w-2 h-2 rotate-45 bg-slate-900 border-t border-l border-white/20" />
                     <p className="text-xs font-bold text-white flex items-center gap-1.5 justify-center">
                       <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
                       Leaderboard & Medals
@@ -727,17 +740,18 @@ export default function DashboardPage() {
                   aria-selected={activeTab === "analytics"}
                   aria-label="User Stats, Graphs and Velocity Analytics"
                   onClick={() => setActiveTab("analytics")}
-                  className={`liquid-glass-item relative flex items-center justify-center w-14 h-14 sm:w-16 sm:h-16 p-1.5 rounded-2xl cursor-pointer transition-all duration-300 ${activeTab === "analytics"
-                      ? "liquid-glass-item-active-analytics scale-105 shadow-[0_0_20px_rgba(6,182,212,0.5)] border-cyan-400/80 bg-cyan-500/20"
-                      : ""
+                  className={`liquid-glass-item relative flex items-center justify-center w-11 h-11 xs:w-12 xs:h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 p-1 sm:p-1.5 rounded-xl sm:rounded-2xl cursor-pointer transition-all duration-300 ${activeTab === "analytics"
+                    ? "liquid-glass-item-active-analytics scale-105 shadow-[0_0_20px_rgba(6,182,212,0.5)] border-cyan-400/80 bg-cyan-500/20"
+                    : ""
                     }`}
                 >
                   <AnalyticsStatsLogo className="w-full h-full" isActive={activeTab === "analytics"} />
                 </button>
 
                 {/* Micro-Tooltip with context */}
-                <div className="absolute left-1/2 -translate-x-1/2 top-full mt-3 z-50 pointer-events-none opacity-0 group-hover:opacity-100 translate-y-1 group-hover:translate-y-0 transition-all duration-200">
-                  <div className="px-3.5 py-1.5 rounded-xl bg-slate-900/95 border border-white/10 shadow-2xl text-center whitespace-nowrap backdrop-blur-xl">
+                <div className="hidden md:block absolute left-1/2 -translate-x-1/2 top-full mt-2.5 z-[60] pointer-events-none opacity-0 group-hover:opacity-100 translate-y-1 group-hover:translate-y-0 transition-all duration-200">
+                  <div className="relative px-3.5 py-1.5 rounded-xl bg-slate-900/95 border border-white/20 shadow-[0_12px_30px_rgba(0,0,0,0.85)] text-center whitespace-nowrap backdrop-blur-xl">
+                    <div className="absolute -top-1 left-1/2 -translate-x-1/2 w-2 h-2 rotate-45 bg-slate-900 border-t border-l border-white/20" />
                     <p className="text-xs font-bold text-white flex items-center gap-1.5 justify-center">
                       <span className="w-1.5 h-1.5 rounded-full bg-cyan-400" />
                       User Stats & Graphs

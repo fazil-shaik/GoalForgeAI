@@ -5,6 +5,7 @@ import { useAuth } from "@/context/AuthContext";
 import { useGoal } from "@/context/GoalContext";
 import { CoachingStyle } from "@/types/auth";
 import { PushManagerHelper, PushPermissionStatus } from "@/lib/pushManager";
+import { UserAvatar } from "@/components/ui/UserAvatar";
 import {
   X,
   User,
@@ -279,7 +280,7 @@ export function ProfileSettingsModal({
         </div>
 
         {/* Navigation Tabs */}
-        <div className="flex items-center px-6 pt-3 border-b border-white/10 gap-2 overflow-x-auto bg-slate-900/50">
+        <div className="flex items-center px-4 sm:px-6 pt-3 border-b border-white/10 gap-2 overflow-x-auto no-scrollbar bg-slate-900/50">
           <button
             type="button"
             onClick={() => setActiveTab("general")}
@@ -380,6 +381,21 @@ export function ProfileSettingsModal({
                 <div className="p-2 rounded-xl bg-slate-900/60 text-center border border-white/5">
                   <p className="text-lg font-black text-yellow-300 font-mono">{unlockedMedalsCount}</p>
                   <p className="text-[10px] text-slate-400 font-mono">Medals Earned</p>
+                </div>
+              </div>
+
+              {/* Avatar Live Preview */}
+              <div className="flex items-center gap-3.5 p-3 rounded-2xl bg-slate-950/70 border border-white/5">
+                <UserAvatar
+                  src={avatarUrl.trim() || user?.avatarUrl}
+                  name={name.trim() || user?.name}
+                  size="xl"
+                />
+                <div className="flex-1">
+                  <p className="text-xs font-bold text-white">{name || user?.name || "Profile Avatar"}</p>
+                  <p className="text-[11px] text-slate-400 mt-0.5">
+                    {avatarUrl ? "Using custom avatar image" : "Synced with Google OAuth photo or personalized initials"}
+                  </p>
                 </div>
               </div>
 

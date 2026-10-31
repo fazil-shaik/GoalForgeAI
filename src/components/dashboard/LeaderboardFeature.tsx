@@ -26,6 +26,7 @@ import {
   Globe,
   Share2,
 } from "lucide-react";
+import { UserAvatar } from "@/components/ui/UserAvatar";
 
 interface LeaderboardFeatureProps {
   onOpenProfile?: () => void;
@@ -413,11 +414,12 @@ export function LeaderboardFeature({
                   <div className="absolute -top-3.5 px-3 py-0.5 rounded-full bg-slate-300 text-slate-950 text-xs font-black font-mono shadow-md">
                     #2 SILVER LAUREL
                   </div>
-                  <div className="w-16 h-16 rounded-2xl overflow-hidden border-2 border-slate-300 shadow-lg my-2">
-                    <img
-                      src={top2.image || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150"}
-                      alt={top2.name}
-                      className="w-full h-full object-cover"
+                  <div className="my-2 border-2 border-slate-300 rounded-2xl shadow-lg p-0.5">
+                    <UserAvatar
+                      src={top2.image}
+                      name={top2.name}
+                      size="xl"
+                      className="w-14 h-14 rounded-xl"
                     />
                   </div>
                   <h3 className="text-base font-bold text-white mt-1">{top2.name}</h3>
@@ -447,11 +449,12 @@ export function LeaderboardFeature({
                     <Crown className="w-3.5 h-3.5" />
                     #1 APEX CHAMPION
                   </div>
-                  <div className="w-20 h-20 rounded-2xl overflow-hidden border-2 border-amber-400 shadow-xl my-2">
-                    <img
-                      src={top1.image || "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150"}
-                      alt={top1.name}
-                      className="w-full h-full object-cover"
+                  <div className="my-2 border-2 border-amber-400 rounded-2xl shadow-xl p-0.5">
+                    <UserAvatar
+                      src={top1.image}
+                      name={top1.name}
+                      size="xl"
+                      className="w-16 h-16 rounded-xl"
                     />
                   </div>
                   <h3 className="text-lg font-black text-amber-200 mt-1">{top1.name}</h3>
@@ -480,11 +483,12 @@ export function LeaderboardFeature({
                   <div className="absolute -top-3.5 px-3 py-0.5 rounded-full bg-amber-700 text-amber-100 text-xs font-black font-mono shadow-md">
                     #3 BRONZE VANGUARD
                   </div>
-                  <div className="w-16 h-16 rounded-2xl overflow-hidden border-2 border-amber-700 shadow-lg my-2">
-                    <img
-                      src={top3.image || "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150"}
-                      alt={top3.name}
-                      className="w-full h-full object-cover"
+                  <div className="my-2 border-2 border-amber-700 rounded-2xl shadow-lg p-0.5">
+                    <UserAvatar
+                      src={top3.image}
+                      name={top3.name}
+                      size="xl"
+                      className="w-14 h-14 rounded-xl"
                     />
                   </div>
                   <h3 className="text-base font-bold text-white mt-1">{top3.name}</h3>
@@ -558,19 +562,11 @@ export function LeaderboardFeature({
                         {/* Contender Name & Avatar */}
                         <td className="py-4 px-4">
                           <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-xl overflow-hidden bg-slate-800 border border-white/10 shrink-0">
-                              {entry.image ? (
-                                <img
-                                  src={entry.image}
-                                  alt={entry.name}
-                                  className="w-full h-full object-cover"
-                                />
-                              ) : (
-                                <div className="w-full h-full flex items-center justify-center font-bold text-slate-300">
-                                  {entry.name[0]}
-                                </div>
-                              )}
-                            </div>
+                            <UserAvatar
+                              src={entry.image}
+                              name={entry.name}
+                              size="lg"
+                            />
                             <div>
                               <p className="font-bold text-white flex items-center gap-2">
                                 {entry.name}

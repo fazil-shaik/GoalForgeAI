@@ -38,7 +38,7 @@ export class PushManagerHelper {
     try {
       return await navigator.serviceWorker.register("/sw.js", { scope: "/" });
     } catch (err) {
-      console.error("[PushManagerHelper] Failed to register service worker:", err);
+      console.warn("[PushManagerHelper] Could not register service worker:", err);
       return null;
     }
   }
@@ -90,14 +90,27 @@ export class PushManagerHelper {
 
     // 3. Subscribe with PushManager
     try {
-      const applicationServerKey = urlBase64ToUint8Array(vapidPublicKey);
-      let subscription = await registration.pushManager.getSubscription();
+      const cleanedKey = vapidPublicKey.trim().replace(/^["']|["']$/g, "");
+      const applicationServerKey = urlBase64ToUint8Array(cleanedKey);
+      let subscription = await registration.pushManager.getSubscription().catch(() => null);
 
       if (!subscription) {
-        subscription = await registration.pushManager.subscribe({
-          userVisibleOnly: true,
-          applicationServerKey: applicationServerKey as any,
-        });
+        try {
+          subscription = await registration.pushManager.subscribe({
+            userVisibleOnly: true,
+            applicationServerKey: applicationServerKey as any,
+          });
+        } catch (firstErr: any) {
+          // If first attempt fails (e.g. stale registration state), unsubscribe and retry cleanly
+          const staleSub = await registration.pushManager.getSubscription().catch(() => null);
+          if (staleSub) {
+            await staleSub.unsubscribe().catch(() => { });
+          }
+          subscription = await registration.pushManager.subscribe({
+            userVisibleOnly: true,
+            applicationServerKey: applicationServerKey as any,
+          });
+        }
       }
 
       const rawKey = subscription.getKey ? subscription.getKey("p256dh") : null;
@@ -128,8 +141,23 @@ export class PushManagerHelper {
 
       return { success: true, subscription };
     } catch (err: any) {
-      console.error("[PushManagerHelper] Subscription error:", err);
-      return { success: false, message: err.message || "Failed to subscribe to web push." };
+      const isPushServiceError =
+        err?.name === "AbortError" ||
+        String(err?.message || "").includes("push service error");
+
+      if (isPushServiceError) {
+        console.warn(
+          "[PushManagerHelper] Browser push service currently unavailable (e.g. Incognito mode, Brave shields, or network firewall). In-app alerts remain active."
+        );
+        return {
+          success: false,
+          message:
+            "Your browser's push service is currently unavailable or disabled (common in Incognito, Brave shields, or corporate firewalls). All in-app notifications remain active!",
+        };
+      }
+
+      console.warn("[PushManagerHelper] Subscription notice:", err?.message || err);
+      return { success: false, message: err?.message || "Failed to subscribe to web push." };
     }
   }
 
@@ -139,10 +167,10 @@ export class PushManagerHelper {
     try {
       const registration = await navigator.serviceWorker.getRegistration();
       if (registration) {
-        const subscription = await registration.pushManager.getSubscription();
+        const subscription = await registration.pushManager.getSubscription().catch(() => null);
         if (subscription) {
           const endpoint = subscription.endpoint;
-          await subscription.unsubscribe();
+          await subscription.unsubscribe().catch(() => { });
 
           await fetch("/api/notifications/unsubscribe", {
             method: "POST",
@@ -153,7 +181,7 @@ export class PushManagerHelper {
       }
       return { success: true };
     } catch (err: any) {
-      console.error("[PushManagerHelper] Unsubscribe error:", err);
+      console.warn("[PushManagerHelper] Unsubscribe notice:", err);
       return { success: false, message: err.message || "Failed to unsubscribe." };
     }
   }
