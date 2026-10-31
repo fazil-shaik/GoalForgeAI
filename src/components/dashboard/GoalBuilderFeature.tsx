@@ -70,7 +70,10 @@ const STARTER_TEMPLATES = [
 
 export function GoalBuilderFeature({ onGoalActivated }: { onGoalActivated?: () => void }) {
   const { user } = useAuth();
-  const { createGoalWithRoadmap } = useGoal();
+  const { createGoalWithRoadmap, goals, rateLimits } = useGoal();
+
+  const activeGoalsCount = goals.filter((g) => g.status !== "archived").length;
+  const isGoalLimitReached = rateLimits?.goals ? !rateLimits.goals.allowed : activeGoalsCount >= 2;
 
   // Form State
   const [ambition, setAmbition] = useState("");
@@ -241,17 +244,45 @@ export function GoalBuilderFeature({ onGoalActivated }: { onGoalActivated?: () =
       )}
 
       {/* Header */}
-      <div>
-        <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-lg bg-indigo-500/20 text-indigo-400 flex items-center justify-center">
-            <Sparkles className="w-4 h-4" />
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 rounded-lg bg-indigo-500/20 text-indigo-400 flex items-center justify-center">
+              <Sparkles className="w-4 h-4" />
+            </div>
+            <h2 className="text-xl font-bold text-white">AI Goal & Roadmap Builder</h2>
           </div>
-          <h2 className="text-xl font-bold text-white">AI Goal & Roadmap Builder</h2>
+          <p className="text-xs text-slate-400 mt-1">
+            Turn your high-level ambition into a realistic, capacity-checked roadmap with milestones, time estimates, and dependencies.
+          </p>
         </div>
-        <p className="text-xs text-slate-400 mt-1">
-          Turn your high-level ambition into a realistic, capacity-checked roadmap with milestones, time estimates, and dependencies.
-        </p>
+
+        <div className="flex items-center gap-2">
+          <span
+            className={`text-xs font-mono px-3 py-1.5 rounded-xl border flex items-center gap-1.5 ${
+              isGoalLimitReached
+                ? "bg-amber-500/10 border-amber-500/30 text-amber-300"
+                : "bg-slate-900 border-slate-800 text-slate-300"
+            }`}
+          >
+            <Target className="w-3.5 h-3.5 text-indigo-400" />
+            <span>Active Goals: <strong>{activeGoalsCount}/2</strong></span>
+          </span>
+        </div>
       </div>
+
+      {/* Goal Limit Warning if at or above capacity */}
+      {isGoalLimitReached && !generatedDraft && (
+        <div className="p-4 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-200 text-xs flex items-start gap-3">
+          <AlertTriangle className="w-5 h-5 shrink-0 text-amber-400 mt-0.5" />
+          <div className="space-y-1">
+            <p className="font-bold text-amber-100">Maximum Goal Limit Reached (2/2 Active Goals)</p>
+            <p className="text-slate-300">
+              Each user account is limited to 2 concurrent active goals. To start a new goal, please complete an existing goal or archive one from your dashboard.
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* Starter Templates Picker */}
       {!generatedDraft && (
@@ -390,14 +421,19 @@ export function GoalBuilderFeature({ onGoalActivated }: { onGoalActivated?: () =
           <div className="pt-2">
             <button
               type="button"
-              disabled={isGenerating || !ambition.trim()}
+              disabled={isGenerating || !ambition.trim() || isGoalLimitReached}
               onClick={handleGenerateRoadmap}
-              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-indigo-600 to-emerald-500 hover:from-indigo-500 hover:to-emerald-400 text-white font-bold text-sm shadow-lg shadow-indigo-600/25 transition-all hover:scale-[1.01] disabled:opacity-50"
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-indigo-600 to-emerald-500 hover:from-indigo-500 hover:to-emerald-400 text-white font-bold text-sm shadow-lg shadow-indigo-600/25 transition-all hover:scale-[1.01] disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed"
             >
               {isGenerating ? (
                 <>
                   <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                   <span>Analyzing Feasibility & Synthesizing Milestones...</span>
+                </>
+              ) : isGoalLimitReached ? (
+                <>
+                  <AlertTriangle className="w-4 h-4 text-amber-400" />
+                  <span>Goal Limit Reached (2/2 Active)</span>
                 </>
               ) : (
                 <>

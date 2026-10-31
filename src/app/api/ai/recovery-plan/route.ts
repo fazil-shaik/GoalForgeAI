@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getAuthUserId } from "@/server/auth/getUser";
 import { RecoveryService } from "@/server/services/recovery.service";
+import { RateLimitService } from "@/server/services/rate-limit.service";
 import { RecoveryProposal } from "@/types/goal";
 
 export async function POST(req: Request) {
@@ -9,6 +10,18 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  // Rate limit check: Maximum 1 Recovery Plan generation per day
+  const recoveryLimit = await RateLimitService.checkRecoveryLimit(userId);
+  if (!recoveryLimit.allowed) {
+    await RateLimitService.logAiRequest({
+      userId,
+      taskType: "recovery",
+      status: "rate_limited",
+    });
+    return RateLimitService.createRateLimitResponse(recoveryLimit);
+  }
+
+  const startTime = Date.now();
   try {
     const body = await req.json();
     const goalId = body.goalId;
@@ -33,6 +46,15 @@ export async function POST(req: Request) {
       );
     }
 
+    const latencyMs = Date.now() - startTime;
+    await RateLimitService.logAiRequest({
+      userId,
+      goalId,
+      taskType: "recovery",
+      status: "success",
+      latencyMs,
+    });
+
     const payload = savedProposal.proposedDiffJson as any;
     const formattedProposal: RecoveryProposal = {
       id: savedProposal.id,
@@ -50,9 +72,27 @@ export async function POST(req: Request) {
     return NextResponse.json({
       success: true,
       proposal: formattedProposal,
+      quota: {
+        limit: recoveryLimit.limit,
+        current: recoveryLimit.current + 1,
+        remaining: 0,
+        resetsAt: recoveryLimit.resetsAt,
+      },
+    }, {
+      headers: {
+        "X-RateLimit-Limit": recoveryLimit.limit.toString(),
+        "X-RateLimit-Remaining": "0",
+        ...(recoveryLimit.resetsAt ? { "X-RateLimit-Reset": recoveryLimit.resetsAt } : {}),
+      },
     });
   } catch (err: any) {
     console.error("Error generating recovery proposal with Gemini AI:", err);
+    await RateLimitService.logAiRequest({
+      userId,
+      taskType: "recovery",
+      status: "error",
+      latencyMs: Date.now() - startTime,
+    });
     return NextResponse.json(
       { error: err?.message || "Failed to generate recovery proposal" },
       { status: 500 }

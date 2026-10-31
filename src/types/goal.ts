@@ -99,6 +99,29 @@ export interface MedalItem {
   metadata?: any;
 }
 
+export interface RateLimitsData {
+  goals: {
+    limit: number;
+    current: number;
+    remaining: number;
+    allowed: boolean;
+  };
+  coach: {
+    limit: number;
+    current: number;
+    remaining: number;
+    allowed: boolean;
+    resetsAt: string;
+  };
+  recovery: {
+    limit: number;
+    current: number;
+    remaining: number;
+    allowed: boolean;
+    resetsAt: string;
+  };
+}
+
 export interface LeaderboardUserEntry {
   rank: number;
   userId: string;

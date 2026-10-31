@@ -34,11 +34,16 @@ export function RecoveryModeFeature({
     generateRecoveryPlan,
     acceptRecoveryProposal,
     dismissRecoveryProposal,
+    rateLimits,
   } = useGoal();
 
   const [selectedReason, setSelectedReason] = useState<string>("Work emergency / overtime crunch");
   const [customReason, setCustomReason] = useState<string>("");
   const [isGenerating, setIsGenerating] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  const recoveryRemaining = rateLimits?.recovery ? rateLimits.recovery.remaining : undefined;
+  const isRecoveryLimitReached = rateLimits?.recovery ? !rateLimits.recovery.allowed : false;
 
   const todayDate = new Date().toISOString().split("T")[0];
 
@@ -49,11 +54,15 @@ export function RecoveryModeFeature({
 
   const handleGenerate = async () => {
     setIsGenerating(true);
+    setErrorMessage(null);
     const reason = customReason.trim() || selectedReason;
     try {
-      await generateRecoveryPlan(reason);
-    } catch {
-      // safe fallback
+      const result = await generateRecoveryPlan(reason);
+      if (!result.success && result.error) {
+        setErrorMessage(result.error);
+      }
+    } catch (err: any) {
+      setErrorMessage(err?.message || "Failed to generate recovery proposal.");
     } finally {
       setIsGenerating(false);
     }
@@ -73,6 +82,15 @@ export function RecoveryModeFeature({
             <h2 className="text-xl font-bold text-white">Goal Recovery Mode</h2>
             <span className="text-[10px] uppercase font-bold px-2 py-0.5 rounded bg-amber-500/10 text-amber-400 border border-amber-500/20">
               Core Differentiator
+            </span>
+            <span
+              className={`text-xs font-mono px-2.5 py-0.5 rounded-lg border flex items-center gap-1.5 ${
+                isRecoveryLimitReached
+                  ? "bg-amber-500/10 border-amber-500/30 text-amber-300"
+                  : "bg-slate-900 border-slate-800 text-slate-300"
+              }`}
+            >
+              Quota: {recoveryRemaining !== undefined ? `${recoveryRemaining}/1 left today` : "1/day"}
             </span>
           </div>
           <p className="text-xs text-slate-400 mt-1">
@@ -115,7 +133,7 @@ export function RecoveryModeFeature({
         <div>
           <label className="block text-xs font-bold text-slate-300 mb-2 flex items-center gap-1.5">
             <HeartHandshake className="w-4 h-4 text-emerald-400" />
-            What was the primary obstacle? (Zero judgment — helps AI optimize your recovery)
+            What was the primary obstacle? (Zero judgment helps AI optimize your recovery)
           </label>
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2.5">
             {[
@@ -133,11 +151,10 @@ export function RecoveryModeFeature({
                   setSelectedReason(reason);
                   setCustomReason("");
                 }}
-                className={`p-2.5 text-left rounded-xl border text-xs transition-all ${
-                  selectedReason === reason && !customReason
+                className={`p-2.5 text-left rounded-xl border text-xs transition-all ${selectedReason === reason && !customReason
                     ? "bg-amber-500/20 border-amber-500 text-amber-200 font-semibold shadow-sm"
                     : "bg-slate-950 border-slate-800 text-slate-400 hover:border-slate-700"
-                }`}
+                  }`}
               >
                 {reason}
               </button>
@@ -155,17 +172,39 @@ export function RecoveryModeFeature({
           </div>
         </div>
 
+        {errorMessage && (
+          <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs flex items-center gap-2">
+            <AlertTriangle className="w-4 h-4 text-rose-400 shrink-0" />
+            <span>{errorMessage}</span>
+          </div>
+        )}
+
+        {isRecoveryLimitReached && !errorMessage && (
+          <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-200 text-xs flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0" />
+              <span>Daily Recovery proposal quota reached (1/1 generated today).</span>
+            </div>
+            <span className="font-mono text-[10px] text-slate-400">Resets at 00:00 UTC</span>
+          </div>
+        )}
+
         <div className="pt-2">
           <button
             type="button"
-            disabled={isGenerating}
+            disabled={isGenerating || isRecoveryLimitReached}
             onClick={handleGenerate}
-            className="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 via-amber-600 to-indigo-600 hover:from-amber-400 hover:to-indigo-500 text-slate-950 font-bold text-xs shadow-lg shadow-amber-500/20 transition-all hover:scale-[1.01] disabled:opacity-50"
+            className="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 via-amber-600 to-indigo-600 hover:from-amber-400 hover:to-indigo-500 text-slate-950 font-bold text-xs shadow-lg shadow-amber-500/20 transition-all hover:scale-[1.01] disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed"
           >
             {isGenerating ? (
               <>
                 <div className="w-4 h-4 border-2 border-slate-950/30 border-t-slate-950 rounded-full animate-spin" />
                 <span>Diagnosing Workload & Generating 7-Day Ramp...</span>
+              </>
+            ) : isRecoveryLimitReached ? (
+              <>
+                <AlertTriangle className="w-4 h-4 text-slate-950" />
+                <span>Daily Recovery Quota Reached (1/1)</span>
               </>
             ) : (
               <>
@@ -185,11 +224,10 @@ export function RecoveryModeFeature({
             <div>
               <div className="flex items-center gap-2">
                 <span
-                  className={`text-xs uppercase font-bold font-mono px-2.5 py-0.5 rounded-full ${
-                    isAccepted
+                  className={`text-xs uppercase font-bold font-mono px-2.5 py-0.5 rounded-full ${isAccepted
                       ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30"
                       : "bg-amber-500/20 text-amber-300 border border-amber-500/30"
-                  }`}
+                    }`}
                 >
                   {isAccepted ? "✓ Proposal Accepted & Applied" : "Pending User Approval"}
                 </span>

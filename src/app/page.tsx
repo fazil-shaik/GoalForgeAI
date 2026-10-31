@@ -118,7 +118,7 @@ export default function LandingPage() {
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center space-y-6">
           <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-slate-900/90 border border-indigo-500/40 text-indigo-300 text-xs font-semibold backdrop-blur-md shadow-lg shadow-indigo-500/10">
             <Sparkles className="w-3.5 h-3.5 text-emerald-400 animate-pulse" />
-            <span>Turn Ambitions Into Realistic Plans — Not Broken Streaks</span>
+            <span>Turn Ambitions Into Realistic Plans  Not Broken Streaks</span>
           </div>
 
           <h1 className="text-4xl sm:text-6xl lg:text-7xl font-black tracking-tight text-white leading-[1.08] max-w-4xl mx-auto">
@@ -129,7 +129,7 @@ export default function LandingPage() {
           </h1>
 
           <p className="text-base sm:text-lg text-slate-300 font-normal leading-relaxed max-w-2xl mx-auto">
-            Most goal trackers fail the moment life gets unpredictable. GoalForge AI breaks your ambitions into capacity-aware daily milestones — and{" "}
+            Most goal trackers fail the moment life gets unpredictable. GoalForge AI breaks your ambitions into capacity-aware daily milestones and{" "}
             <span className="text-emerald-400 font-semibold">recovers your momentum</span> when life gets in the way.
           </p>
 
@@ -450,7 +450,7 @@ export default function LandingPage() {
           <div className="flex items-center gap-2">
             <Target className="w-4 h-4 text-indigo-400" />
             <span className="font-bold text-slate-300">GoalForge AI</span>
-            <span>— Adaptive Goal-Achievement Platform</span>
+            <span>Adaptive Goal Achievement Platform</span>
           </div>
           <div className="flex items-center gap-6">
             <Link href="/auth" className="hover:text-slate-300 transition-colors">

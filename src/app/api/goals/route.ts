@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getAuthUserId } from "@/server/auth/getUser";
 import { GoalService } from "@/server/services/goal.service";
+import { RateLimitService } from "@/server/services/rate-limit.service";
 
 export async function GET() {
   const userId = await getAuthUserId();
@@ -31,6 +32,12 @@ export async function POST(req: Request) {
   const userId = await getAuthUserId();
   if (!userId) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  // Rate limit check: Maximum 2 goals per user
+  const goalLimit = await RateLimitService.checkGoalLimit(userId);
+  if (!goalLimit.allowed) {
+    return RateLimitService.createRateLimitResponse(goalLimit);
   }
 
   try {

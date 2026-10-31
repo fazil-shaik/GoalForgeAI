@@ -10,6 +10,7 @@ import {
   TaskStatus,
   StreakData,
   MedalItem,
+  RateLimitsData,
 } from "@/types/goal";
 import confetti from "canvas-confetti";
 
@@ -49,12 +50,15 @@ interface GoalContextType {
   addTask: (task: Omit<Task, "id" | "goalId">) => Promise<void>;
   deleteTask: (taskId: string) => Promise<void>;
   // Feature 3: Recovery Mode (The Differentiator)
-  generateRecoveryPlan: (userReason?: string) => Promise<void>;
+  generateRecoveryPlan: (userReason?: string) => Promise<{ success: boolean; error?: string }>;
   acceptRecoveryProposal: () => Promise<void>;
   dismissRecoveryProposal: () => Promise<void>;
   // Feature 4: Coach & Feasibility
   sendCoachMessage: (text: string) => Promise<void>;
   resetAllData: () => Promise<void>;
+  // Rate Limits Engine
+  rateLimits: RateLimitsData | null;
+  refreshRateLimits: () => Promise<void>;
 }
 
 const GoalContext = createContext<GoalContextType | undefined>(undefined);
@@ -74,6 +78,21 @@ export function GoalProvider({ children }: { children: React.ReactNode }) {
   const [unlockedMedalsCount, setUnlockedMedalsCount] = useState<number>(0);
   const [hardGoalsCompletedCount, setHardGoalsCompletedCount] = useState<number>(0);
   const [unlockedCelebrationModal, setUnlockedCelebrationModal] = useState<MedalItem | null>(null);
+
+  // Rate Limits Quota State
+  const [rateLimits, setRateLimits] = useState<RateLimitsData | null>(null);
+
+  const refreshRateLimits = useCallback(async () => {
+    try {
+      const res = await fetch("/api/user/rate-limits");
+      if (res.ok) {
+        const data = await res.json();
+        if (data.limits) setRateLimits(data.limits);
+      }
+    } catch {
+      // safe fallback
+    }
+  }, []);
 
   const refreshStreak = useCallback(async () => {
     try {
@@ -175,7 +194,8 @@ export function GoalProvider({ children }: { children: React.ReactNode }) {
     loadGoals();
     refreshStreak();
     refreshMedals();
-  }, [loadGoals, refreshStreak, refreshMedals]);
+    refreshRateLimits();
+  }, [loadGoals, refreshStreak, refreshMedals, refreshRateLimits]);
 
   const activeGoals = goals.filter((g) => g.status === "active");
   const completedGoals = goals.filter((g) => g.status === "completed");
@@ -194,6 +214,7 @@ export function GoalProvider({ children }: { children: React.ReactNode }) {
     }
     await refreshStreak();
     await refreshMedals();
+    await refreshRateLimits();
   };
 
   // Feature 1: Create Goal with Roadmap in Neon DB
@@ -214,7 +235,8 @@ export function GoalProvider({ children }: { children: React.ReactNode }) {
       });
 
       if (!res.ok) {
-        throw new Error("Failed to save goal");
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData.error || errData.message || "Failed to save goal");
       }
 
       const result = await res.json();
@@ -237,6 +259,7 @@ export function GoalProvider({ children }: { children: React.ReactNode }) {
         const gData = await goalsRes.json();
         setGoals(gData.goals || []);
       }
+      await refreshRateLimits();
 
       if (newGoalId) {
         setActiveGoalIdState(newGoalId);
@@ -244,8 +267,9 @@ export function GoalProvider({ children }: { children: React.ReactNode }) {
       }
 
       return newGoalId;
-    } catch {
-      return null;
+    } catch (err: any) {
+      console.error("Error creating goal with roadmap:", err);
+      throw err;
     }
   };
 
@@ -273,6 +297,7 @@ export function GoalProvider({ children }: { children: React.ReactNode }) {
           setRecoveryProposal(null);
         }
       }
+      await refreshRateLimits();
       return true;
     } catch {
       return false;
@@ -286,11 +311,11 @@ export function GoalProvider({ children }: { children: React.ReactNode }) {
       prev.map((t) =>
         t.id === taskId
           ? {
-              ...t,
-              status: "completed" as TaskStatus,
-              actualMinutes: actualMinutes ?? t.estimatedMinutes,
-              completedAt: new Date().toISOString(),
-            }
+            ...t,
+            status: "completed" as TaskStatus,
+            actualMinutes: actualMinutes ?? t.estimatedMinutes,
+            completedAt: new Date().toISOString(),
+          }
           : t
       )
     );
@@ -380,13 +405,13 @@ export function GoalProvider({ children }: { children: React.ReactNode }) {
         data.newlyUnlockedMedals && data.newlyUnlockedMedals.length > 0
           ? data.newlyUnlockedMedals[0]
           : {
-              medalKey: "titan_conqueror",
-              title: "Titan Goal Conqueror",
-              description: "Hard Goal Successfully Mastered! Inscribed in the GoalForge Hall of Champions.",
-              tier: "platinum",
-              iconType: "trophy",
-              metadataJson: {},
-            };
+            medalKey: "titan_conqueror",
+            title: "Titan Goal Conqueror",
+            description: "Hard Goal Successfully Mastered! Inscribed in the GoalForge Hall of Champions.",
+            tier: "platinum",
+            iconType: "trophy",
+            metadataJson: {},
+          };
 
       setUnlockedCelebrationModal({
         key: medalToShow.medalKey,
@@ -416,10 +441,10 @@ export function GoalProvider({ children }: { children: React.ReactNode }) {
       prev.map((t) =>
         t.id === taskId
           ? {
-              ...t,
-              status: "skipped" as TaskStatus,
-              notes: reason ? `Skipped: ${reason}` : t.notes,
-            }
+            ...t,
+            status: "skipped" as TaskStatus,
+            notes: reason ? `Skipped: ${reason}` : t.notes,
+          }
           : t
       )
     );
@@ -442,10 +467,10 @@ export function GoalProvider({ children }: { children: React.ReactNode }) {
       prev.map((t) =>
         t.id === taskId
           ? {
-              ...t,
-              dueDate: newDate,
-              status: "todo" as TaskStatus,
-            }
+            ...t,
+            dueDate: newDate,
+            status: "todo" as TaskStatus,
+          }
           : t
       )
     );
@@ -500,8 +525,8 @@ export function GoalProvider({ children }: { children: React.ReactNode }) {
   };
 
   // Feature 3: Recovery Mode (The Differentiator - Powered by Gemini AI)
-  const generateRecoveryPlan = async (userReason?: string) => {
-    if (!activeGoal) return;
+  const generateRecoveryPlan = async (userReason?: string): Promise<{ success: boolean; error?: string }> => {
+    if (!activeGoal) return { success: false, error: "No active goal selected." };
 
     try {
       const todayDate = new Date().toISOString().split("T")[0];
@@ -520,9 +545,21 @@ export function GoalProvider({ children }: { children: React.ReactNode }) {
         if (data.proposal) {
           setRecoveryProposal(data.proposal);
         }
+        await refreshRateLimits();
+        return { success: true };
+      } else {
+        const errData = await res.json().catch(() => ({}));
+        await refreshRateLimits();
+        return {
+          success: false,
+          error: errData.error || errData.message || "Failed to generate recovery proposal.",
+        };
       }
-    } catch {
-      // safe fallback
+    } catch (err: any) {
+      return {
+        success: false,
+        error: err?.message || "Failed to generate recovery proposal.",
+      };
     }
   };
 
@@ -624,6 +661,23 @@ export function GoalProvider({ children }: { children: React.ReactNode }) {
         if (data.coachMessage) {
           setCoachMessages((prev) => [data.coachMessage, ...prev]);
         }
+        await refreshRateLimits();
+      } else {
+        const errData = await res.json().catch(() => ({}));
+        const quotaMsg =
+          errData.message ||
+          errData.error ||
+          "Daily AI Coach quota reached (4/4 questions used).";
+        const errorCoachReply: CoachMessage = {
+          id: "coach_rate_limit_" + Date.now(),
+          sender: "coach",
+          text: `⚠️ ${quotaMsg}`,
+          recommendedNextAction: "Review today's prioritized tasks and take action.",
+          reason: "Rate limits help you maintain execution focus instead of over-analyzing.",
+          timestamp: new Date().toISOString(),
+        };
+        setCoachMessages((prev) => [errorCoachReply, ...prev]);
+        await refreshRateLimits();
       }
     } catch {
       // safe fallback
@@ -671,6 +725,8 @@ export function GoalProvider({ children }: { children: React.ReactNode }) {
         dismissRecoveryProposal,
         sendCoachMessage,
         resetAllData,
+        rateLimits,
+        refreshRateLimits,
       }}
     >
       {children}

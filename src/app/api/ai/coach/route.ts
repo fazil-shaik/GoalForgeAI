@@ -4,6 +4,7 @@ import { GoalRepository } from "@/server/repositories/goal.repository";
 import { TaskRepository } from "@/server/repositories/task.repository";
 import { CoachRepository } from "@/server/repositories/coach.repository";
 import { GeminiService } from "@/server/services/gemini.service";
+import { RateLimitService } from "@/server/services/rate-limit.service";
 import { CoachMessage } from "@/types/goal";
 
 export async function POST(req: Request) {
@@ -12,6 +13,18 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  // Rate limit check: Maximum 4 AI Coach requests per day
+  const coachLimit = await RateLimitService.checkCoachLimit(userId);
+  if (!coachLimit.allowed) {
+    await RateLimitService.logAiRequest({
+      userId,
+      taskType: "coach",
+      status: "rate_limited",
+    });
+    return RateLimitService.createRateLimitResponse(coachLimit);
+  }
+
+  const startTime = Date.now();
   try {
     const body = await req.json();
     const { goalId, message } = body;
@@ -98,13 +111,43 @@ export async function POST(req: Request) {
       timestamp: coachMsgRecord?.timestamp?.toISOString() || new Date().toISOString(),
     };
 
+    const latencyMs = Date.now() - startTime;
+    await RateLimitService.logAiRequest({
+      userId,
+      goalId: goalId || undefined,
+      taskType: "coach",
+      status: "success",
+      latencyMs,
+    });
+
+    // Calculate new remaining requests for today (subtracting this one)
+    const newRemaining = Math.max(0, coachLimit.remaining - 1);
+
     return NextResponse.json({
       success: true,
       userMessage,
       coachMessage,
+      quota: {
+        limit: coachLimit.limit,
+        current: coachLimit.current + 1,
+        remaining: newRemaining,
+        resetsAt: coachLimit.resetsAt,
+      },
+    }, {
+      headers: {
+        "X-RateLimit-Limit": coachLimit.limit.toString(),
+        "X-RateLimit-Remaining": newRemaining.toString(),
+        ...(coachLimit.resetsAt ? { "X-RateLimit-Reset": coachLimit.resetsAt } : {}),
+      },
     });
   } catch (err: any) {
     console.error("Error in AI Coach chat:", err);
+    await RateLimitService.logAiRequest({
+      userId,
+      taskType: "coach",
+      status: "error",
+      latencyMs: Date.now() - startTime,
+    });
     return NextResponse.json(
       { error: err?.message || "Failed to generate AI coach response" },
       { status: 500 }

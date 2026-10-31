@@ -5,7 +5,7 @@ import { AuthProvider } from "@/context/AuthContext";
 import { GoalProvider } from "@/context/GoalContext";
 
 export const metadata: Metadata = {
-  title: "GoalForge AI — Turn Ambition Into Unstoppable Execution",
+  title: "GoalForge AI Turn Ambition Into Unstoppable Execution",
   description:
     "An adaptive goal-achievement platform that turns ambitions into realistic plans, tracks execution, and helps users recover when life gets in the way.",
 };

@@ -70,7 +70,7 @@ export class RecoveryService {
         userId,
         goalId: proposal.goalId,
         sender: "coach",
-        text: "🎉 Recovery Plan successfully applied to your schedule! Your backlog has been re-staged smoothly so you don't burn out. Take a deep breath — you're completely back on track.",
+        text: "🎉 Recovery Plan successfully applied to your schedule! Your backlog has been re-staged smoothly so you don't burn out. Take a deep breath you're completely back on track.",
         recommendedNextAction:
           (proposal.proposedDiffJson as any)?.firstStep ||
           "Complete today's primary bite-sized focus block.",

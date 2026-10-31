@@ -222,6 +222,22 @@ export async function initDatabase() {
       );
     `;
 
+    await sql`
+      CREATE TABLE IF NOT EXISTS ai_requests (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        goal_id UUID REFERENCES goals(id) ON DELETE SET NULL,
+        task_type TEXT NOT NULL,
+        provider TEXT DEFAULT 'gemini' NOT NULL,
+        model TEXT DEFAULT 'gemini-1.5-pro' NOT NULL,
+        status TEXT NOT NULL,
+        latency_ms INTEGER,
+        token_usage INTEGER,
+        estimated_cost NUMERIC(10, 6),
+        created_at TIMESTAMP DEFAULT NOW() NOT NULL
+      );
+    `;
+
     // Ensure community leaderboard cohort exists in database
     await seedCommunityLeaderboard(sql);
 
