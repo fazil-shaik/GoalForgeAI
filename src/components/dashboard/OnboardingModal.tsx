@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useGoal } from "@/context/GoalContext";
 import { CoachingStyle } from "@/types/auth";
+import { GoalForgeArrowLoader } from "@/components/ui/GoalForgeArrowLoader";
 import confetti from "canvas-confetti";
 import {
   Sparkles,
@@ -509,6 +510,20 @@ export function OnboardingModal({ isOpen, onClose, onComplete }: OnboardingModal
       aria-modal="true"
     >
       <div className="relative w-full max-w-3xl rounded-3xl bg-slate-900 border border-white/10 shadow-[0_0_60px_rgba(99,102,241,0.25)] flex flex-col max-h-[92vh] overflow-hidden animate-scaleUp">
+        {/* Animated Arrow-to-Target Loader while Synthesizing or Saving */}
+        {isSynthesizing && (
+          <GoalForgeArrowLoader
+            message="Synthesizing Your Goal Roadmap..."
+            subMessage="Gemini AI is analyzing domain feasibility, milestones, and daily pacing..."
+          />
+        )}
+        {isSavingGoal && (
+          <GoalForgeArrowLoader
+            message="Forging & Initializing Goal..."
+            subMessage="Locking in your active roadmap and generating daily execution sprints..."
+          />
+        )}
+
         {/* Glow ambient background effects */}
         <div className="absolute -top-24 -left-24 w-80 h-80 bg-indigo-600/15 rounded-full blur-3xl pointer-events-none" />
         <div className="absolute -bottom-24 -right-24 w-80 h-80 bg-emerald-500/15 rounded-full blur-3xl pointer-events-none" />

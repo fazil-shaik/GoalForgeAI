@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useGoal } from "@/context/GoalContext";
+import { GoalForgeArrowLoader } from "@/components/ui/GoalForgeArrowLoader";
 import {
   Sparkles,
   Target,
@@ -81,6 +82,7 @@ export function GoalBuilderFeature({ onGoalActivated }: { onGoalActivated?: () =
 
   // Generation & Review State
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isActivating, setIsActivating] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [generatedDraft, setGeneratedDraft] = useState<{
     title: string;
@@ -194,30 +196,50 @@ export function GoalBuilderFeature({ onGoalActivated }: { onGoalActivated?: () =
       });
     });
 
-    await createGoalWithRoadmap(
-      {
-        title: generatedDraft.title,
-        outcome: generatedDraft.outcome,
-        category,
-        baseline: baseline || "Initial baseline recorded",
-        targetMetric: generatedDraft.targetMetric,
-        targetValue: generatedDraft.targetValue,
-        deadline: targetDate,
-        status: "active",
-        feasibilityRisk: generatedDraft.feasibilityRisk,
-      },
-      flatMilestones,
-      flatTasks
-    );
+    setIsActivating(true);
+    try {
+      await createGoalWithRoadmap(
+        {
+          title: generatedDraft.title,
+          outcome: generatedDraft.outcome,
+          category,
+          baseline: baseline || "Initial baseline recorded",
+          targetMetric: generatedDraft.targetMetric,
+          targetValue: generatedDraft.targetValue,
+          deadline: targetDate,
+          status: "active",
+          feasibilityRisk: generatedDraft.feasibilityRisk,
+        },
+        flatMilestones,
+        flatTasks
+      );
 
-    // Reset draft
-    setGeneratedDraft(null);
-    setAmbition("");
-    if (onGoalActivated) onGoalActivated();
+      // Reset draft
+      setGeneratedDraft(null);
+      setAmbition("");
+      if (onGoalActivated) onGoalActivated();
+    } finally {
+      setIsActivating(false);
+    }
   };
 
   return (
     <div className="space-y-8 animate-fadeIn">
+      {/* Fullscreen Arrow-to-Target Loader while Generating or Activating */}
+      {isGenerating && (
+        <GoalForgeArrowLoader
+          message="Synthesizing AI Goal Roadmap..."
+          subMessage="Simulating milestone dependencies, estimating cognitive load, and calibrating target timeline..."
+        />
+      )}
+
+      {isActivating && (
+        <GoalForgeArrowLoader
+          message="Forging & Activating Goal..."
+          subMessage="Locking target coordinates, scheduling actionable sprints, and generating streak plan..."
+        />
+      )}
+
       {/* Header */}
       <div>
         <div className="flex items-center gap-2">
