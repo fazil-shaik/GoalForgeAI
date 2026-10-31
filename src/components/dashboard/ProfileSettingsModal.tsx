@@ -104,7 +104,7 @@ export function ProfileSettingsModal({
   const [pushPermission, setPushPermission] = useState<PushPermissionStatus>("default");
   const [isSubscribingPush, setIsSubscribingPush] = useState(false);
   const [isSendingTestPush, setIsSendingTestPush] = useState(false);
-  const [testPushFeedback, setTestPushFeedback] = useState<{ success: boolean; message: string } | null>(null);
+  const [pushStatusFeedback, setPushStatusFeedback] = useState<{ success: boolean; message: string } | null>(null);
 
   const [isSaving, setIsSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
@@ -143,20 +143,21 @@ export function ProfileSettingsModal({
 
   const handleTogglePush = async () => {
     setIsSubscribingPush(true);
-    setTestPushFeedback(null);
+    setPushStatusFeedback(null);
     try {
       if (!pushEnabled) {
         const res = await PushManagerHelper.subscribe();
         if (res.success) {
           setPushEnabled(true);
           setPushPermission("granted");
-          setTestPushFeedback({
+          setPushStatusFeedback({
             success: true,
             message: "Push notifications successfully enabled on this browser!",
           });
+          setTimeout(() => setPushStatusFeedback(null), 3500);
         } else {
           setPushPermission(PushManagerHelper.getPermission());
-          setTestPushFeedback({
+          setPushStatusFeedback({
             success: false,
             message: res.message || "Could not enable push notifications.",
           });
@@ -165,10 +166,11 @@ export function ProfileSettingsModal({
         const res = await PushManagerHelper.unsubscribe();
         if (res.success) {
           setPushEnabled(false);
-          setTestPushFeedback({
+          setPushStatusFeedback({
             success: true,
             message: "Push notifications disabled on this device.",
           });
+          setTimeout(() => setPushStatusFeedback(null), 3500);
         }
       }
     } finally {
@@ -178,12 +180,13 @@ export function ProfileSettingsModal({
 
   const handleSendTestPush = async () => {
     setIsSendingTestPush(true);
-    setTestPushFeedback(null);
+    setPushStatusFeedback(null);
     try {
       const res = await PushManagerHelper.sendTestPush();
-      setTestPushFeedback(res);
+      setPushStatusFeedback(res);
+      setTimeout(() => setPushStatusFeedback(null), 4000);
     } catch {
-      setTestPushFeedback({
+      setPushStatusFeedback({
         success: false,
         message: "Failed to communicate with notification service.",
       });
@@ -842,28 +845,34 @@ export function ProfileSettingsModal({
 
               {/* Master Device Toggle Card */}
               <div className="p-4 rounded-2xl bg-slate-950/60 border border-white/10 space-y-4">
-                <div className="flex items-center justify-between">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                   <div className="flex items-center gap-3">
                     <div
                       className={`w-10 h-10 rounded-2xl flex items-center justify-center transition-colors ${
                         pushEnabled
-                          ? "bg-amber-500/20 text-amber-400 border border-amber-500/30"
+                          ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"
                           : "bg-slate-800 text-slate-400 border border-white/10"
                       }`}
                     >
-                      {pushEnabled ? <BellRing className="w-5 h-5 animate-pulse" /> : <BellOff className="w-5 h-5" />}
+                      {pushEnabled ? <BellRing className="w-5 h-5" /> : <BellOff className="w-5 h-5" />}
                     </div>
                     <div>
-                      <h4 className="text-sm font-bold text-white flex items-center gap-2">
-                        Web Push Notifications
-                        {pushEnabled && (
-                          <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
-                            Active
+                      <div className="flex items-center gap-2">
+                        <h4 className="text-sm font-bold text-white">Browser Push Notifications</h4>
+                        {pushEnabled ? (
+                          <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 flex items-center gap-1 font-semibold">
+                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" /> Active
+                          </span>
+                        ) : (
+                          <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-slate-800 text-slate-400 border border-white/5">
+                            Disabled
                           </span>
                         )}
-                      </h4>
-                      <p className="text-xs text-slate-400">
-                        Receive instant briefings and streak updates right on your screen.
+                      </div>
+                      <p className="text-xs text-slate-400 mt-0.5">
+                        {pushEnabled
+                          ? "Delivering automated morning task briefings and streak defense alerts."
+                          : "Activate to receive your daily briefings and streak alerts directly on this device."}
                       </p>
                     </div>
                   </div>
@@ -872,23 +881,41 @@ export function ProfileSettingsModal({
                     type="button"
                     disabled={isSubscribingPush}
                     onClick={handleTogglePush}
-                    className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${
+                    className={`px-4 py-2 rounded-xl text-xs font-semibold transition-all flex items-center justify-center gap-2 cursor-pointer shrink-0 ${
                       pushEnabled
-                        ? "bg-rose-500/20 text-rose-300 border border-rose-500/30 hover:bg-rose-500/30"
-                        : "bg-amber-500 hover:bg-amber-400 text-slate-950 shadow-md shadow-amber-500/20"
+                        ? "bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-white/10"
+                        : "bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold shadow-md shadow-amber-500/20"
                     }`}
                   >
                     {isSubscribingPush ? (
                       <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
                     ) : pushEnabled ? (
-                      "Turn Off"
+                      "Disable on this Device"
                     ) : (
                       <>
-                        <Bell className="w-3.5 h-3.5" /> Enable on this Device
+                        <Bell className="w-3.5 h-3.5" /> Enable Notifications
                       </>
                     )}
                   </button>
                 </div>
+
+                {/* Inline Status Feedback */}
+                {pushStatusFeedback && (
+                  <div
+                    className={`p-3 rounded-xl text-xs flex items-center gap-2 ${
+                      pushStatusFeedback.success
+                        ? "bg-emerald-500/10 border border-emerald-500/30 text-emerald-300"
+                        : "bg-rose-500/10 border border-rose-500/30 text-rose-300"
+                    }`}
+                  >
+                    {pushStatusFeedback.success ? (
+                      <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                    ) : (
+                      <AlertCircle className="w-4 h-4 text-rose-400 shrink-0" />
+                    )}
+                    <span>{pushStatusFeedback.message}</span>
+                  </div>
+                )}
               </div>
 
               {/* Preferences & Schedule Settings */}
@@ -916,7 +943,7 @@ export function ProfileSettingsModal({
                   />
                 </div>
 
-                {/* Briefing Time Picker */}
+                {/* Briefing Time Picker & Timezone */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pb-4 border-b border-white/5">
                   <div>
                     <label className="block text-xs font-semibold text-slate-300 mb-1.5">
@@ -968,52 +995,18 @@ export function ProfileSettingsModal({
                 </div>
               </div>
 
-              {/* Test Notification Action */}
-              <div className="p-4 rounded-2xl bg-gradient-to-r from-amber-950/30 to-slate-900 border border-amber-500/20 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-                <div className="space-y-0.5">
-                  <h4 className="text-xs font-bold text-white flex items-center gap-1.5">
-                    <Send className="w-3.5 h-3.5 text-amber-400" />
-                    Verify Push Delivery
-                  </h4>
-                  <p className="text-[11px] text-slate-400">
-                    Dispatch an instant test notification to check browser and system sound/display permissions.
-                  </p>
-                </div>
-
-                <button
-                  type="button"
-                  disabled={isSendingTestPush || !pushEnabled}
-                  onClick={handleSendTestPush}
-                  className="px-3.5 py-2 rounded-xl bg-amber-600 hover:bg-amber-500 text-slate-950 text-xs font-bold transition-all shadow-md shadow-amber-600/20 flex items-center gap-1.5 disabled:opacity-50 cursor-pointer shrink-0"
-                >
-                  {isSendingTestPush ? (
-                    <>
-                      <div className="w-3 h-3 border-2 border-slate-950 border-t-transparent rounded-full animate-spin" />
-                      Testing...
-                    </>
-                  ) : (
-                    <>
-                      <Send className="w-3 h-3" /> Send Test Push
-                    </>
-                  )}
-                </button>
-              </div>
-
-              {/* Test Push Result Alert */}
-              {testPushFeedback && (
-                <div
-                  className={`p-3.5 rounded-xl text-xs flex items-center gap-2 ${
-                    testPushFeedback.success
-                      ? "bg-emerald-500/10 border border-emerald-500/30 text-emerald-300"
-                      : "bg-rose-500/10 border border-rose-500/30 text-rose-300"
-                  }`}
-                >
-                  {testPushFeedback.success ? (
-                    <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
-                  ) : (
-                    <AlertCircle className="w-4 h-4 text-rose-400 shrink-0" />
-                  )}
-                  <span>{testPushFeedback.message}</span>
+              {/* Developer Diagnostics (Excluded from production builds) */}
+              {process.env.NODE_ENV === "development" && (
+                <div className="p-3 rounded-xl bg-slate-900/40 border border-white/5 flex items-center justify-between text-xs text-slate-400">
+                  <span className="font-mono text-[11px] text-slate-500">Dev Tool: Test Push Notification</span>
+                  <button
+                    type="button"
+                    disabled={isSendingTestPush || !pushEnabled}
+                    onClick={handleSendTestPush}
+                    className="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 font-mono text-[10px] disabled:opacity-40 cursor-pointer"
+                  >
+                    {isSendingTestPush ? "Dispatching..." : "Send Test Push"}
+                  </button>
                 </div>
               )}
             </div>
