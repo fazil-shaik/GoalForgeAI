@@ -48,6 +48,8 @@ import { ProfileSettingsModal } from "@/components/dashboard/ProfileSettingsModa
 import { SocialShareModal } from "@/components/dashboard/SocialShareModal";
 import { OnboardingModal } from "@/components/dashboard/OnboardingModal";
 import { PushOptInBanner } from "@/components/dashboard/PushOptInBanner";
+import { GoalForgeArrowLoader } from "@/components/ui/GoalForgeArrowLoader";
+
 import {
   DailyTasksLogo,
   RoadmapBuilderLogo,
@@ -140,10 +142,20 @@ export default function DashboardPage() {
   // If checking authentication
   if (sessionStatus === "loading") {
     return (
-      <div className="min-h-screen bg-[#070a12] text-slate-100 flex flex-col items-center justify-center space-y-4">
-        <div className="w-10 h-10 border-4 border-indigo-500/30 border-t-indigo-500 rounded-full animate-spin" />
-        <p className="text-xs font-mono text-slate-400">Verifying Google OAuth Session...</p>
-      </div>
+      <GoalForgeArrowLoader
+        message="Authenticating GoalForge Session..."
+        subMessage="Verifying Google OAuth tokens and initializing secure telemetry..."
+      />
+    );
+  }
+
+  // If initial goal load is in progress
+  if (isGoalLoading && goals.length === 0) {
+    return (
+      <GoalForgeArrowLoader
+        message="Loading GoalForge Dashboard..."
+        subMessage="Synchronizing active roadmaps, streak stats, and daily focus units..."
+      />
     );
   }
 
